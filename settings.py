@@ -10,7 +10,7 @@ root.title("Settings")
 root.geometry("1024x968")
 
 def detect_webcam(maxdevices=3):
-    """Detects available webcams and returns a list of their names."""
+    #detects all available webcams
     cameras = []
     for i in range(maxdevices):
         cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
