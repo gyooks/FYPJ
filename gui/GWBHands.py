@@ -42,13 +42,14 @@ def show_settings():
     mainmenu.place_forget()
     settings_frame.place(relx=0.5, rely=0.5, anchor="center")
 
+
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
 btn_settings.pack(pady=10)
 
 btn_exit = ctk.CTkButton(mainmenu, text="Exit", font=button_font, width=button_width, height=button_height, command=root.quit)
 btn_exit.pack(pady=10)
 
-# Create settings frame but hidden initially
+# Create settings frame but hidden until settings are accessed
 settings_frame = SettingsPage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 settings_frame.place_forget()
 
