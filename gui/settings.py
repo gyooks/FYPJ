@@ -1,55 +1,65 @@
-# GWBHands.py
 import customtkinter as ctk
-from settings import SettingsPage
+import cv2
 
-# Create root window
-root = ctk.CTk()
-ctk.set_appearance_mode("dark")
-ctk.set_default_color_theme("blue")
+class SettingsPage(ctk.CTkFrame):
+    def __init__(self, master, **kwargs):
+        super().__init__(master, **kwargs)
 
-# Set the title and size of the window
-root.title("GWBHands")
-root.geometry("1280x720")
+        def detect_webcam(maxdevices=3):
+            cameras = []
+            for i in range(maxdevices):
+                cap = cv2.VideoCapture(i, cv2.CAP_DSHOW)
+                if cap is not None and cap.isOpened():
+                    cameras.append(f"Webcam {i}")
+                    cap.release()
+            return cameras if cameras else ["No webcam found"]
 
-# Create mainmenu frame
-mainmenu = ctk.CTkFrame(root, width=1600, height=900, fg_color="transparent")
-mainmenu.place(relx=0.5, rely=0.5, anchor="center")
+        detected_webcams = detect_webcam()
+        gesture_detection_value = ctk.IntVar(value=0)
+        gesture_overlay_value = ctk.IntVar(value=0)
 
-# App title
-title = ctk.CTkLabel(mainmenu, text="GWBHands", font=("Segoe UI", 32, "bold"))
-title.pack(pady=20)
+        # Title
+        title = ctk.CTkLabel(self, text="Settings", font=("Segoe UI", 32, "bold"))
+        title.pack(pady=20)
 
-# Logic to switch frames
-def show_mainmenu():
-    settings_frame.place_forget()
-    mainmenu.place(relx=0.5, rely=0.5, anchor="center")
+        # Webcam
+        webcam = ctk.CTkLabel(self, text="Webcam:", font=("Segoe UI", 16, "bold"))
+        webcam.pack(pady=10)
 
-def show_settings():
-    mainmenu.place_forget()
-    settings_frame.place(relx=0.5, rely=0.5, anchor="center")
+        webcam_list = ctk.CTkOptionMenu(self, values=detected_webcams)
+        webcam_list.set(detected_webcams[0])
+        webcam_list.pack(pady=10)
 
-# Buttons
-button_font = ("Segoe UI", 16)
-button_width = 240
-button_height = 50
+        # Gesture Detection
+        gesture_detection = ctk.CTkLabel(self, text="Gesture Detection:", font=("Segoe UI", 16, "bold"))
+        gesture_detection.pack(pady=10)
 
-btn_start = ctk.CTkButton(mainmenu, text="Start", font=button_font, width=button_width, height=button_height)
-btn_start.pack(pady=10)
+        button_font = ("Segoe UI", 16)
+        detection_on = ctk.CTkRadioButton(self, text="On", variable=gesture_detection_value, value=1, font=button_font)
+        detection_off = ctk.CTkRadioButton(self, text="Off", variable=gesture_detection_value, value=0, font=button_font)
+        detection_on.pack(pady=10)
+        detection_off.pack(pady=10)
 
-btn_preset = ctk.CTkButton(mainmenu, text="Preset Used: ", font=button_font, width=button_width, state="disabled")
-btn_preset.pack(pady=10)
+        # Gesture Overlay
+        gesture_overlay = ctk.CTkLabel(self, text="Gesture Overlay:", font=("Segoe UI", 16, "bold"))
+        gesture_overlay.pack(pady=10)
 
-btn_changepreset = ctk.CTkButton(mainmenu, text="Change Preset", font=button_font, width=button_width, height=button_height)
-btn_changepreset.pack(pady=10)
+        overlay_on = ctk.CTkRadioButton(self, text="On", variable=gesture_overlay_value, value=1, font=button_font)
+        overlay_off = ctk.CTkRadioButton(self, text="Off", variable=gesture_overlay_value, value=0, font=button_font)
+        overlay_on.pack(pady=10)
+        overlay_off.pack(pady=10)
 
-btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
-btn_settings.pack(pady=10)
+    def save_and_return(self):
+        # to add functionality to save settings
+        # Implement saving logic here
+        self.back_to_main_callback()
 
-btn_exit = ctk.CTkButton(mainmenu, text="Exit", font=button_font, width=button_width, height=button_height, command=root.quit)
-btn_exit.pack(pady=10)
+    def cancel_and_return(self):
+        self.back_to_main_callback()
 
-# Create settings frame (pass show_mainmenu callback)
-settings_frame = SettingsPage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 
-# Execute GUI
-root.mainloop()
+    # Save and Cancel buttons
+    save_settings = ctk.CTkButton(self, text="Save", command=self.save_and_return, font=("Segoe UI", 16, "bold"))
+    cancel_settings = ctk.CTkButton(self, text="Cancel", command=self.cancel_and_return, font=("Segoe UI", 16, "bold"))
+    save_settings.pack(pady=10)
+    cancel_settings.pack(pady=10)
