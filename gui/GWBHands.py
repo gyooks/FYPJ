@@ -1,6 +1,7 @@
 # GWBHands.py
 import customtkinter as ctk
 from settings import SettingsPage  # Import SettingsPage class
+from change_preset import ChangePreset  # Import ChangePreset class
 
 # Create root window
 root = ctk.CTk()
@@ -41,6 +42,11 @@ def show_mainmenu():
 def show_settings():
     mainmenu.place_forget()
     settings_frame.place(relx=0.5, rely=0.5, anchor="center")
+    
+def show_changepreset():
+    mainmenu.place_forget()
+    changepreset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
+    changepreset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
