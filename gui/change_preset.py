@@ -19,8 +19,8 @@ class ChangePreset(ctk.CTkToplevel):
         # Presets
         self.presets = ["Preset 1", "Preset 2", "Preset 3"]
         
-        title = ctk.CTkLabel(self, text="Select Preset:", font=(font_ui, 32, "bold"))
-        title.pack(pady=20)
+        subtitle = ctk.CTkLabel(self, text="Select Preset:", font=(font_ui, 24, "bold"))
+        subtitle.pack(pady=10)
         
         preset_frame = ctk.CTkFrame(self, fg_color="transparent")
         preset_frame.pack(pady=10)
@@ -41,22 +41,53 @@ class ChangePreset(ctk.CTkToplevel):
             edit_btn = ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60, command=lambda p=preset: self.edit_preset(p))
             edit_btn.grid(row=i, column=3, padx=5)
             
-            create_btn = ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset)
-            create_btn.pack(pady=10)
+        create_btn = ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset)
+        create_btn.pack(pady=10)
 
-            back_btn = ctk.CTkButton(self, text="Back", font=button_font, width=250, command=self.destroy)
-            back_btn.pack(pady=10)
+        back_btn = ctk.CTkButton(self, text="Back", font=button_font, width=250, command=self.close_and_return)
+        back_btn.pack(pady=10)
             
     def use_preset(self, preset_name):
     # Logic to use the selected preset
         print(f"Using preset: {preset_name}")
-        if self.selected_preset:
-            self.selected_preset.set(preset_name)
-        self.destroy()
+        if self.update_preset_callback:
+            self.update_preset_callback(preset_name)  # Notify the main GUI
+        self.close_and_return()
         
     def delete_preset(self, preset_name):
         # Logic to delete the selected preset
         print(f"Deleting preset: {preset_name}")
         self.presets.remove(preset_name)
+        # TODO: Refresh the widget layout (not implemented here)
         self.preset_rows()
+    
+    def edit_preset(self, preset_name):
+        print(f"Editing preset: {preset_name}")
+        # Haven Implement this functionality
+
+    def create_new_preset(self):
+        print("Creating new preset...")
+        # Haven Implement this functionality   
         
+    def close_and_return(self):
+        self.destroy()
+        self.back_to_main_callback()
+
+
+# For testing this page alone
+
+# if __name__ == "__main__":
+#     import customtkinter as ctk
+
+#     def dummy_callback(preset):
+#         print(f"Selected preset in test mode: {preset}")
+
+#     def back_to_main():
+#         print("Returning to main (test)")
+
+#     root = ctk.CTk()
+#     root.geometry("800x600")
+#     root.title("Test ChangePreset")
+
+#     win = ChangePreset(root, back_to_main_callback=back_to_main, update_preset_callback=dummy_callback)
+#     win.mainloop()

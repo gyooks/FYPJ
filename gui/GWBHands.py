@@ -12,27 +12,17 @@ ctk.set_default_color_theme("blue")
 root.title("GWBHands")
 root.geometry("1280x720")
 
+# Variables
+current_preset_text = ctk.StringVar(value="Preset Used: None")
+
 # Create main menu frame
-mainmenu = ctk.CTkFrame(root, width=1600, height=900, fg_color="transparent")
+mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
 mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 
 # App title
 title = ctk.CTkLabel(mainmenu, text="GWBHands", font=("Segoe UI", 32, "bold"))
 title.pack(pady=20)
 
-# Buttons
-button_font = ("Segoe UI", 16)
-button_width = 240
-button_height = 50
-
-btn_start = ctk.CTkButton(mainmenu, text="Start", font=button_font, width=button_width, height=button_height)
-btn_start.pack(pady=10)
-
-btn_preset = ctk.CTkButton(mainmenu, text="Preset Used:", font=button_font, width=button_width, state="disabled")
-btn_preset.pack(pady=10)
-
-btn_changepreset = ctk.CTkButton(mainmenu, text="Change Preset", font=button_font, width=button_width, height=button_height)
-btn_changepreset.pack(pady=10)
 
 # Logic to switch frames
 def show_mainmenu():
@@ -45,9 +35,32 @@ def show_settings():
     
 def show_changepreset():
     mainmenu.place_forget()
-    changepreset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
+    changepreset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, update_preset_callback=update_current_preset, width=1600, height=900, fg_color="#1a1a1a")
     changepreset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
+def update_current_preset(preset_name):
+    current_preset_text.set(f"Preset Used: {preset_name}")
+
+
+# Buttons
+button_font = ("Segoe UI", 16)
+button_width = 300
+button_height = 40
+
+btn_start = ctk.CTkButton(mainmenu, text="Start", font=button_font, width=button_width, height=button_height)
+btn_start.pack(pady=10)
+
+btn_preset = ctk.CTkButton(mainmenu, textvariable=current_preset_text , font=button_font, width=button_width, state="disabled")
+btn_preset.pack(pady=10)
+
+btn_changepreset = ctk.CTkButton(mainmenu, text="Change Preset", font=button_font, width=button_width, height=button_height, command=show_changepreset)
+btn_changepreset.pack(pady=10)
+
+btn_gestures = ctk.CTkButton(mainmenu, text="Gestures", font=button_font, width=button_width, height=button_height)
+btn_gestures.pack(pady=10)
+
+btn_tutorial = ctk.CTkButton(mainmenu, text="How To Use", font=button_font, width=button_width, height=button_height)
+btn_tutorial.pack(pady=10)
 
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
 btn_settings.pack(pady=10)
