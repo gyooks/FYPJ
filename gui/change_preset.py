@@ -1,11 +1,12 @@
 import customtkinter as ctk
-class ChangePreset(ctk.CTkToplevel):
-    def __init__(self, master, back_to_main_callback,selected_preset=None, update_preset_callback=None, **kwargs):
+
+class ChangePreset(ctk.CTkFrame):
+    def __init__(self, master, back_to_main_callback, selected_preset=None, update_preset_callback=None, **kwargs):
         super().__init__(master, **kwargs)
-        self.title("Change Preset")
         self.selected_preset = selected_preset
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
+        self.presets = ["Preset 1", "Preset 2", "Preset 3"]
         self.create_widgets()
         
     def create_widgets(self):
@@ -16,9 +17,6 @@ class ChangePreset(ctk.CTkToplevel):
         title = ctk.CTkLabel(self, text="Change Preset", font=(font_ui, 32, "bold"))
         title.pack(pady=20)
 
-        # Presets
-        self.presets = ["Preset 1", "Preset 2", "Preset 3"]
-        
         subtitle = ctk.CTkLabel(self, text="Select Preset:", font=(font_ui, 24, "bold"))
         subtitle.pack(pady=10)
         
@@ -40,7 +38,7 @@ class ChangePreset(ctk.CTkToplevel):
 
             edit_btn = ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60, command=lambda p=preset: self.edit_preset(p))
             edit_btn.grid(row=i, column=3, padx=5)
-            
+        
         create_btn = ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset)
         create_btn.pack(pady=10)
 
@@ -48,31 +46,34 @@ class ChangePreset(ctk.CTkToplevel):
         back_btn.pack(pady=10)
             
     def use_preset(self, preset_name):
-    # Logic to use the selected preset
         print(f"Using preset: {preset_name}")
         if self.update_preset_callback:
             self.update_preset_callback(preset_name)  # Notify the main GUI
         self.close_and_return()
         
     def delete_preset(self, preset_name):
-        # Logic to delete the selected preset
         print(f"Deleting preset: {preset_name}")
-        self.presets.remove(preset_name)
-        # TODO: Refresh the widget layout (not implemented here)
-        self.preset_rows()
+        if preset_name in self.presets:
+            self.presets.remove(preset_name)
+            self.refresh_preset_list()
     
     def edit_preset(self, preset_name):
         print(f"Editing preset: {preset_name}")
-        # Haven Implement this functionality
+        # Haven't implemented this functionality yet
 
     def create_new_preset(self):
         print("Creating new preset...")
-        # Haven Implement this functionality   
+        # Haven't implemented this functionality yet
         
     def close_and_return(self):
-        self.destroy()
         self.back_to_main_callback()
-
+        self.destroy()
+        
+    def refresh_preset_list(self):
+        # Clear and recreate preset UI (simplest way)
+        for widget in self.winfo_children():
+            widget.destroy()
+        self.create_widgets()
 
 # For testing this page alone
 

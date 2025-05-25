@@ -35,8 +35,8 @@ def show_settings():
     
 def show_changepreset():
     mainmenu.place_forget()
-    changepreset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, update_preset_callback=update_current_preset, width=1600, height=900, fg_color="#1a1a1a")
-    changepreset_frame.place(relx=0.5, rely=0.5, anchor="center")
+    settings_frame.place_forget()
+    change_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def update_current_preset(preset_name):
     current_preset_text.set(f"Preset Used: {preset_name}")
@@ -71,6 +71,10 @@ btn_exit.pack(pady=10)
 # Create settings frame but hidden until settings are accessed
 settings_frame = SettingsPage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 settings_frame.place_forget()
+
+# Create change preset frame but hidden until accessed
+change_preset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
+change_preset_frame.place_forget()
 
 # Start the GUI loop
 root.mainloop()
