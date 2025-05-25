@@ -67,7 +67,7 @@ class ChangePreset(ctk.CTkFrame):
         
     def close_and_return(self):
         self.back_to_main_callback()
-        self.destroy()
+        self.place_forget()
         
     def refresh_preset_list(self):
         # Clear and recreate preset UI (simplest way)
