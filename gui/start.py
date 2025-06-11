@@ -37,6 +37,9 @@ cooldown = 2  # seconds between accepting same gesture
 last_prediction = None
 last_action_time = time.time()
 
+# === GUI toggle ===
+display_window = True  # 'h' key toggles this
+
 # === Start webcam ===
 cap = cv2.VideoCapture(0)
 
@@ -52,47 +55,39 @@ while True:
     if results.multi_hand_landmarks:
         landmarks = results.multi_hand_landmarks[0]
 
-       
-        # Extract only 2 features per frame: x and y of landmark 0 (wrist)
         hand_data = []
-        lm = landmarks.landmark[0]
-        hand_data.extend([lm.x, lm.y])
+        for lm in landmarks.landmark:
+            hand_data.extend([lm.x, lm.y, lm.z])  # 63 features
 
-
-        sequence.append(hand_data)
-
-        # Draw landmarks
         mp_draw.draw_landmarks(frame, landmarks, mp_hands.HAND_CONNECTIONS)
 
-        # When 30 frames collected, make prediction
-        if len(sequence) == 30:
-            input_seq = np.expand_dims(sequence, axis=0)  # (1, 30, 63)
+        input_data = np.expand_dims(hand_data, axis=0)  # (1, 63)
 
-            start_time = time.time()
-            prediction = model.predict(input_seq, verbose=0)
-            elapsed = time.time() - start_time
-            print(f"Prediction took {elapsed:.3f} seconds")
+        prediction = model.predict(input_data, verbose=0)
+        predicted_class = GESTURE_CLASSES[np.argmax(prediction)]
 
-            predicted_class = GESTURE_CLASSES[np.argmax(prediction)]
+        cv2.putText(frame, f"Gesture: {predicted_class}", (10, 50),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
 
-            # Display prediction
-            cv2.putText(frame, f"Gesture: {predicted_class}", (10, 50),
-                        cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
-
-            # Throttle key press to avoid freezing
-            current_time = time.time()
-            if predicted_class != last_prediction or (current_time - last_action_time) > cooldown:
-                pyautogui.press(gesture_to_key[predicted_class])
-                last_action_time = current_time
-                last_prediction = predicted_class
+        current_time = time.time()
+        if predicted_class != last_prediction or (current_time - last_action_time) > cooldown:
+            pyautogui.press(gesture_to_key[predicted_class])
+            last_action_time = current_time
+            last_prediction = predicted_class
 
     else:
-        # Clear buffer if no hand detected
         sequence.clear()
 
-    cv2.imshow("Gesture Control", frame)
-    if cv2.waitKey(1) & 0xFF == ord("q"):
+    if display_window:
+        cv2.imshow("Gesture Control", frame)
+
+    key = cv2.waitKey(1) & 0xFF
+    if key == ord("q"):
         break
+    elif key == ord("h"):  # toggle visibility
+        display_window = not display_window
+        if not display_window:
+            cv2.destroyWindow("Gesture Control")
 
 cap.release()
 cv2.destroyAllWindows()
