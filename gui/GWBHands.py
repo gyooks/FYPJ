@@ -29,6 +29,7 @@ title.pack(pady=20)
 # Logic to switch frames
 def show_mainmenu():
     settings_frame.place_forget()
+    how_to_use_frame.place_forget()
     mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_settings():
