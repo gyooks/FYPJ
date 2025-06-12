@@ -3,7 +3,7 @@ import customtkinter as ctk
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
 from how_to_use import HowtousePage  # Import HowtousePage class
-
+from gestures import Gestures  # Import Gestures class
 
 # Create root window
 root = ctk.CTk()
@@ -81,12 +81,15 @@ settings_frame = SettingsPage(root, back_to_main_callback=show_mainmenu, width=1
 settings_frame.place_forget()
 
 # Create change preset frame but hidden until accessed
-change_preset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
+change_preset_frame = ChangePreset(root, update_preset_callback=update_current_preset, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 change_preset_frame.place_forget()
 
 # Create Howtouse frame but hidden until accessed
 how_to_use_frame = HowtousePage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 how_to_use_frame.place_forget()
 
+# Create Gestures frame but hidden until accessed
+gestures_frame = Gestures(root, back_to_main_callback=show_mainmenu, selected_gesture=None, update_gesture_callback=update_current_preset)
+gestures_frame.place_forget()
 # Start the GUI loop
 root.mainloop()
