@@ -21,7 +21,7 @@ class HowtousePage(ctk.CTkFrame):
         self.left_panel.pack(side="left", padx=(0, 40))  # No vertical fill
 
         # Load and display the image – no padding
-        image_path = "gui/How-To-Use.jpg"
+        image_path = "How-To-Use.jpg"
         image = CTkImage(light_image=Image.open(image_path), size=(500, 500))
         image_label = ctk.CTkLabel(self.left_panel, image=image, text="")
         image_label.pack(pady=0)  # No vertical padding
