@@ -2,6 +2,8 @@
 import customtkinter as ctk
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
+from how_to_use import HowtousePage  # Import HowtousePage class
+
 
 # Create root window
 root = ctk.CTk()
@@ -27,6 +29,7 @@ title.pack(pady=20)
 # Logic to switch frames
 def show_mainmenu():
     settings_frame.place_forget()
+    how_to_use_frame.place_forget()
     mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_settings():
@@ -37,6 +40,11 @@ def show_changepreset():
     mainmenu.place_forget()
     settings_frame.place_forget()
     change_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
+
+def show_howtouse():
+    mainmenu.place_forget()
+    how_to_use_frame.place(relx=0.5, rely=0.5, anchor="center")
+
 
 def update_current_preset(preset_name):
     current_preset_text.set(f"Preset Used: {preset_name}")
@@ -59,7 +67,7 @@ btn_changepreset.pack(pady=10)
 btn_gestures = ctk.CTkButton(mainmenu, text="Gestures", font=button_font, width=button_width, height=button_height)
 btn_gestures.pack(pady=10)
 
-btn_tutorial = ctk.CTkButton(mainmenu, text="How To Use", font=button_font, width=button_width, height=button_height)
+btn_tutorial = ctk.CTkButton(mainmenu, text="How To Use", font=button_font, width=button_width, height=button_height, command=show_howtouse)
 btn_tutorial.pack(pady=10)
 
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
@@ -75,6 +83,10 @@ settings_frame.place_forget()
 # Create change preset frame but hidden until accessed
 change_preset_frame = ChangePreset(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 change_preset_frame.place_forget()
+
+# Create Howtouse frame but hidden until accessed
+how_to_use_frame = HowtousePage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
+how_to_use_frame.place_forget()
 
 # Start the GUI loop
 root.mainloop()
