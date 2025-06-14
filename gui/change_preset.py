@@ -1,5 +1,5 @@
 import customtkinter as ctk
-
+from edit_preset import EditPreset
 class ChangePreset(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, update_preset_callback=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -7,6 +7,8 @@ class ChangePreset(ctk.CTkFrame):
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
         self.presets = ["Preset 1", "Preset 2", "Preset 3"]
+        self.edit_preset_frame = EditPreset(master, preset_name="", back_callback=self.back_from_edit, width=1600, height=900, fg_color="transparent")
+        self.edit_preset_frame.place_forget()
         self.create_widgets()
         
     def create_widgets(self):
@@ -58,8 +60,16 @@ class ChangePreset(ctk.CTkFrame):
             self.refresh_preset_list()
     
     def edit_preset(self, preset_name):
-        print(f"Editing preset: {preset_name}")
-        # Haven't implemented this functionality yet
+        self.place_forget()
+        self.edit_preset_frame.preset_name = preset_name
+        self.edit_preset_frame.name_entry.delete(0, "end")
+        self.edit_preset_frame.name_entry.insert(0, preset_name)
+        self.edit_preset_frame.title.configure(text=f"Editing: {preset_name}")
+        self.edit_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
+        
+    def back_from_edit(self):
+        self.edit_preset_frame.place_forget()
+        self.place(relx=0.5, rely=0.5, anchor="center")
 
     def create_new_preset(self):
         print("Creating new preset...")
