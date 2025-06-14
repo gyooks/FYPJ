@@ -7,7 +7,9 @@ class ChangePreset(ctk.CTkFrame):
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
         self.presets = ["Preset 1", "Preset 2", "Preset 3"]
-        self.edit_preset_frame = EditPreset(master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_callback, width=1600, height=900, fg_color="transparent")
+        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_name,
+                                            width=1600, height=900, fg_color="transparent")
+
         self.edit_preset_frame.place_forget()
         self.create_widgets()
         
@@ -67,6 +69,12 @@ class ChangePreset(ctk.CTkFrame):
         self.edit_preset_frame.title.configure(text=f"Editing: {preset_name}")
         self.edit_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
         
+    def update_preset_name(self, new_name):
+        index = self.presets.index(self.edit_preset_frame.preset_name)
+        self.presets[index] = new_name
+        print(f"Preset renamed to: {new_name}")
+        self.refresh_preset_list()
+
     def back_from_edit(self):
         self.edit_preset_frame.place_forget()
         self.place(relx=0.5, rely=0.5, anchor="center")

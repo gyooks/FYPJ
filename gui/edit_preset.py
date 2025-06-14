@@ -5,7 +5,7 @@ class EditPreset(ctk.CTkFrame):
         super().__init__(master, **kwargs)
         self.preset_name = preset_name
         self.back_callback = back_callback
-        self.save_changes = save_changes
+        self.save_changes_callback = save_changes
 
         self.title = ctk.CTkLabel(self, text=f"Editing: {preset_name}", font=("Segoe UI", 32, "bold"))
         self.title.pack(pady=20)
@@ -22,10 +22,10 @@ class EditPreset(ctk.CTkFrame):
 
     def save_changes(self):
         new_name = self.name_entry.get()
-        if self.save_changes:
-            self.save_changes(self.preset_name, new_name)  # Notify to apply change
+        if self.save_changes_callback:
+            self.save_changes_callback(new_name)  # Call ChangePreset's update function
         self.close_page()
-        
+
     def close_page(self):
         self.place_forget()
         self.back_callback()
