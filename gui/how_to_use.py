@@ -1,4 +1,5 @@
 import customtkinter as ctk
+import os
 from tkinter import Canvas
 from PIL import Image
 from customtkinter import CTkImage
@@ -20,11 +21,22 @@ class HowtousePage(ctk.CTkFrame):
         self.left_panel = ctk.CTkFrame(main_container, fg_color="transparent")
         self.left_panel.pack(side="left", padx=(0, 40))  # No vertical fill
 
-        # Load and display the image – no padding
-        image_path = "How-To-Use.jpg"
-        image = CTkImage(light_image=Image.open(image_path), size=(500, 500))
-        image_label = ctk.CTkLabel(self.left_panel, image=image, text="")
-        image_label.pack(pady=0)  # No vertical padding
+        # Dynamically locate the image relative to this file's location
+        base_dir = os.path.dirname(os.path.abspath(__file__))
+        image_path = os.path.join(base_dir, "assets", "How-To-Use.jpg")  # or remove "assets" if it's in the same folder
+
+        # Check if image exists, else handle error
+        if os.path.exists(image_path):
+            image = CTkImage(light_image=Image.open(image_path), size=(500, 500))
+        else:
+            print(f"[ERROR] Image not found at: {image_path}")
+            image = None
+
+        # Only create label if image was loaded
+        if image:
+            image_label = ctk.CTkLabel(self.left_panel, image=image, text="")
+            image_label.pack(pady=0)
+
 
         # Add Back button
         back_button = ctk.CTkButton(self.left_panel, text="Back", command=self.cancel_and_return)
