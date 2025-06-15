@@ -13,24 +13,36 @@ model_path = os.path.join(base_dir, "models", "gesture_recognition_model.h5")
 model = load_model(model_path)
 print("Model loaded successfully!")
 
-# === Gesture classes (model output) ===
-GESTURE_CLASSES = [
-    "steer_left",      # label 10
-    "steer_right",     # label 11
-    "pause",           # label 36
-    "boost",           # label 46
-    "accelerate",      # label 57
-    "brake"            # label 58
-]
-
-# === Gesture to key mapping (same for both hands for now) ===
-gesture_to_key = {
-    "steer_left": "left",
-    "steer_right": "right",
-    "accelerate": "w",
-    "brake": "s",
-    "boost": "shift",
-    "pause": "esc"
+PRESETS = {
+    "Preset 1": {
+        "name": "Racing Game",
+        "gesture_classes": [
+            "steer_left",
+            "steer_right",
+            "pause",
+            "boost",
+            "accelerate",
+            "brake"
+        ],
+        "gesture_to_key": {
+            "steer_left": "left",
+            "steer_right": "right",
+            "accelerate": "w",
+            "brake": "s",
+            "boost": "shift",
+            "pause": "esc"
+        }
+    },
+    "Preset 2": {
+        "name": "Empty",
+        "gesture_classes": [],
+        "gesture_to_key": {}
+    },
+    "Preset 3": {
+        "name": "Empty",
+        "gesture_classes": [],
+        "gesture_to_key": {}
+    }
 }
 
 # === MediaPipe setup (2 hands) ===
