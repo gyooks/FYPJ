@@ -1,4 +1,5 @@
 import os
+import sys
 import cv2
 import numpy as np
 import mediapipe as mp
@@ -17,17 +18,17 @@ PRESETS = {
     "Preset 1": {
         "name": "Racing Game",
         "gesture_classes": [
-            "steer_left",
-            "steer_right",
-            "pause",
-            "boost",
-            "accelerate",
-            "brake"
+            "steer_left",  # label 10
+            "steer_right",  # label 11
+            "pause", # label 36
+            "boost", # label 46
+            "accelerate", # label 57
+            "brake" # label 58
         ],
         "gesture_to_key": {
-            "steer_left": "left",
-            "steer_right": "right",
-            "accelerate": "w",
+            "steer_left": "left",  
+            "steer_right": "right",  
+            "accelerate": "w", 
             "brake": "s",
             "boost": "shift",
             "pause": "esc"
@@ -44,6 +45,13 @@ PRESETS = {
         "gesture_to_key": {}
     }
 }
+
+# === Get selected preset name from arguments ===
+preset_arg = sys.argv[1] if len(sys.argv) > 1 else "Preset 1"
+selected_preset = PRESETS.get(preset_arg, PRESETS["Preset 1"])
+GESTURE_CLASSES = selected_preset["gesture_classes"]
+gesture_to_key = selected_preset["gesture_to_key"]
+
 
 # === MediaPipe setup (2 hands) ===
 mp_hands = mp.solutions.hands

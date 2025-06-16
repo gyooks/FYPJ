@@ -1,5 +1,8 @@
 # GWBHands.py
 import customtkinter as ctk
+import sys
+import subprocess
+import tkinter.messagebox as msgbox
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
 from how_to_use import HowtousePage  # Import HowtousePage class
@@ -15,7 +18,9 @@ root.title("GWBHands")
 root.geometry("1280x720")
 
 # Variables
-current_preset_text = ctk.StringVar(value="Preset Used: None")
+current_preset = ctk.StringVar(value="Preset Used: None")
+selected_preset = None
+
 
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
@@ -47,7 +52,19 @@ def show_howtouse():
 
 
 def update_current_preset(preset_name):
-    current_preset_text.set(f"Preset Used: {preset_name}")
+    global selected_preset
+    selected_preset = preset_name
+    current_preset.set(f"Preset Used: {preset_name}")
+    
+#function for start button
+def start_gesture_app():
+    if not selected_preset:
+        msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
+        return
+    python_executable = sys.executable # Get the current Python executable path
+    
+    print(f"Launching start.py with preset: {selected_preset}")
+    subprocess.Popen([python_executable, "start.py", selected_preset])
 
 
 # Buttons
@@ -55,10 +72,10 @@ button_font = ("Segoe UI", 16)
 button_width = 300
 button_height = 40
 
-btn_start = ctk.CTkButton(mainmenu, text="Start", font=button_font, width=button_width, height=button_height)
+btn_start = ctk.CTkButton(mainmenu, text="Start", font=button_font, width=button_width, height=button_height, command=start_gesture_app)
 btn_start.pack(pady=10)
 
-btn_preset = ctk.CTkButton(mainmenu, textvariable=current_preset_text , font=button_font, width=button_width, state="disabled")
+btn_preset = ctk.CTkButton(mainmenu, textvariable= current_preset, font=button_font, width=button_width, state="disabled")
 btn_preset.pack(pady=10)
 
 btn_changepreset = ctk.CTkButton(mainmenu, text="Change Preset", font=button_font, width=button_width, height=button_height, command=show_changepreset)
@@ -91,5 +108,6 @@ how_to_use_frame.place_forget()
 # Create Gestures frame but hidden until accessed
 gestures_frame = Gestures(root, back_to_main_callback=show_mainmenu, selected_gesture=None, update_gesture_callback=update_current_preset)
 gestures_frame.place_forget()
+
 # Start the GUI loop
 root.mainloop()
