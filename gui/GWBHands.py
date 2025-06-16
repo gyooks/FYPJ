@@ -2,6 +2,7 @@ import customtkinter as ctk
 import sys
 import subprocess
 import tkinter.messagebox as msgbox
+import os
 
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
@@ -89,9 +90,10 @@ def start_gesture_app():
         msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
         return
     python_executable = sys.executable  # Get the current Python executable path
-    
+    start_script_path = os.path.join("gui", "start.py") 
+
     print(f"Launching start.py with preset: {selected_preset}")
-    subprocess.Popen([python_executable, "start.py", selected_preset])
+    subprocess.Popen([python_executable, start_script_path])
 
 # Buttons
 button_font = ("Segoe UI", 16)
