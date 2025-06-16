@@ -7,7 +7,7 @@ class ChangePreset(ctk.CTkFrame):
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
         self.presets = ["Racing", "Preset 2", "Preset 3"]
-        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_name,
+        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_callback,
                                             width=1600, height=900, fg_color="transparent")
 
         self.edit_preset_frame.place_forget()
