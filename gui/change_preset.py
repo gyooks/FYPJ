@@ -7,15 +7,13 @@ class ChangePreset(ctk.CTkFrame):
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
         self.presets = ["Racing", "Preset 2", "Preset 3"]
-        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_name,
+        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_callback,
                                             width=1600, height=900, fg_color="transparent")
 
         self.edit_preset_frame.place_forget()
         self.gesture_entries = []
         self.key_entries = []
-        
-        self.gesture_frame = ctk.CTkFrame(self)
-        self.gesture_frame.pack(pady=10)
+
         self.create_widgets()
         
     def create_widgets(self):
@@ -45,7 +43,7 @@ class ChangePreset(ctk.CTkFrame):
             del_btn = ctk.CTkButton(preset_frame, text="Delete", font=button_font, width=60, command=lambda p=preset: self.delete_preset(p))
             del_btn.grid(row=i, column=2, padx=5)
 
-            edit_btn = ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60, command=lambda p=preset: self.edit_preset(p))
+            edit_btn = ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60, command=lambda p=preset: self.edit_preset_window(p))
             edit_btn.grid(row=i, column=3, padx=5)
         
         create_btn = ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset)

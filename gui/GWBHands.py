@@ -1,4 +1,3 @@
-# GWBHands.py
 import customtkinter as ctk
 import sys
 import subprocess
@@ -7,6 +6,7 @@ from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
 from how_to_use import HowtousePage  # Import HowtousePage class
 from gestures import Gestures  # Import Gestures class
+
 
 # Create root window
 root = ctk.CTk()

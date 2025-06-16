@@ -46,6 +46,27 @@ PRESETS = {
     }
 }
 
+    # === Gesture classes (model output) ===
+    #GESTURE_CLASSES = [
+    #    "steer_left",      # label 10
+        #"steer_right",     # label 11
+        #"pause",           # label 36
+        #"boost",           # label 46
+        #"accelerate",      # label 57
+        #"brake"            # label 58
+    #]
+
+    # === Gesture to key mapping (same for both hands for now) ===
+    #gesture_to_key = {
+        #"steer_left": "left",
+        #"steer_right": "right",
+        #"accelerate": "w",
+        #"brake": "s",
+        #"boost": "shift",
+        #"pause": "esc"
+    #}
+
+
 # === Get selected preset name from arguments ===
 preset_arg = sys.argv[1] if len(sys.argv) > 1 else "Preset 1"
 selected_preset = PRESETS.get(preset_arg, PRESETS["Preset 1"])
