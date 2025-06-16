@@ -1,11 +1,13 @@
 import customtkinter as ctk
 
 class Gestures(ctk.CTkFrame):
-    def __init__(self, master, back_to_main_callback, selected_gesture=None, update_gesture_callback=None, **kwargs):
+    def __init__(self, master, back_to_main_callback, selected_gesture=None, update_gesture_callback=None, create_gesture_callback=None, **kwargs):
         super().__init__(master, **kwargs)
         self.selected_gesture = selected_gesture
         self.back_to_main_callback = back_to_main_callback
         self.update_gesture_callback = update_gesture_callback
+        self.create_gesture_callback = create_gesture_callback  # Save callback
+        
         self.gesture = ["Gesture 1", "Gesture 2", "Gesture 3"]
         self.create_widgets()
         
@@ -35,7 +37,9 @@ class Gestures(ctk.CTkFrame):
             edit_btn = ctk.CTkButton(gesture_frame, text="Rename", font=button_font, width=60, command=lambda p=gesture: self.edit_gesture(p))
             edit_btn.grid(row=i, column=3, padx=5)
         
-        create_btn = ctk.CTkButton(self, text="Create new gesture", font=button_font, width=250, command=self.create_new_gesture)
+        # Use the create_gesture_callback if provided, else fallback
+        create_btn = ctk.CTkButton(self, text="Create new gesture", font=button_font, width=250,
+                                   command=self.create_gesture_callback if self.create_gesture_callback else self.create_new_gesture)
         create_btn.pack(pady=10)
 
         back_btn = ctk.CTkButton(self, text="Back", font=button_font, width=250, command=self.close_and_return)
@@ -53,12 +57,12 @@ class Gestures(ctk.CTkFrame):
         # Haven't implemented this functionality yet
 
     def create_new_gesture(self):
-        print("Creating new gesture...")
-        # Haven't implemented this functionality yet
+        print("Creating new gesture... (default fallback)")
+        # Placeholder if no callback is provided
         
     def close_and_return(self):
+        self.place_forget()  # Just hide it
         self.back_to_main_callback()
-        self.destroy()
         
     def refresh_gesture_list(self):
         # Clear and recreate gesture UI (simplest way)
@@ -66,23 +70,22 @@ class Gestures(ctk.CTkFrame):
             widget.destroy()
         self.create_widgets()
 
-# For testing this page alone
 
+# For testing this page alone
 if __name__ == "__main__":
     import customtkinter as ctk
 
-    def dummy_callback(gesture):
-        print(f"Selected gesture in test mode: {gesture}")
+    def dummy_callback():
+        print("Create gesture callback called")
 
-    def back_to_main():
-        print("Returning to main (test)")
+    def dummy_back():
+        print("Back called")
 
     root = ctk.CTk()
     root.geometry("800x600")
     root.title("Test Gestures")
 
-    win = Gestures(root, back_to_main_callback=back_to_main, update_gesture_callback=dummy_callback)
+    win = Gestures(root, back_to_main_callback=dummy_back, create_gesture_callback=dummy_callback)
     win.pack(expand=True, fill="both") 
 
     root.mainloop()
-
