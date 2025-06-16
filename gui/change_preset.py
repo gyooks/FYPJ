@@ -6,11 +6,16 @@ class ChangePreset(ctk.CTkFrame):
         self.selected_preset = selected_preset
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
-        self.presets = ["Racing Preset", "Preset 2", "Preset 3"]
+        self.presets = ["Racing", "Preset 2", "Preset 3"]
         self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_name,
                                             width=1600, height=900, fg_color="transparent")
 
         self.edit_preset_frame.place_forget()
+        self.gesture_entries = []
+        self.key_entries = []
+        
+        self.gesture_frame = ctk.CTkFrame(self)
+        self.gesture_frame.pack(pady=10)
         self.create_widgets()
         
     def create_widgets(self):
@@ -61,7 +66,7 @@ class ChangePreset(ctk.CTkFrame):
             self.presets.remove(preset_name)
             self.refresh_preset_list()
     
-    def edit_preset(self, preset_name):
+    def edit_preset_window(self, preset_name):
         self.place_forget()
         self.edit_preset_frame.preset_name = preset_name
         self.edit_preset_frame.name_entry.delete(0, "end")
@@ -69,11 +74,47 @@ class ChangePreset(ctk.CTkFrame):
         self.edit_preset_frame.title.configure(text=f"Editing: {preset_name}")
         self.edit_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
         
-    def update_preset_name(self, new_name):
-        index = self.presets.index(self.edit_preset_frame.preset_name)
-        self.presets[index] = new_name
-        print(f"Preset renamed to: {new_name}")
-        self.refresh_preset_list()
+    def get_updated_gesture_classes(self):
+        gesture_classes = []
+        for entry in self.gesture_entries:
+            gesture = entry.get().strip()
+        if gesture:
+            gesture_classes.append(gesture)
+        return gesture_classes
+    
+    def get_updated_gesture_to_key(self):
+        mapping = {}
+        for gesture_entry, key_entry in zip(self.gesture_entries, self.key_entries):
+            gesture = gesture_entry.get().strip()
+        key = key_entry.get().strip()
+        if gesture:
+            mapping[gesture] = key
+            return mapping
+        
+    def load_preset_data(self, preset_dict):
+        self.name_entry.delete(0, "end")
+        self.name_entry.insert(0, preset_dict["name"])
+
+        # Clear existing rows
+        for widget in self.gesture_frame.winfo_children():
+            widget.destroy()
+
+        self.gesture_entries = []
+        self.key_entries = []
+
+        for i, gesture in enumerate(preset_dict["gesture_classes"]):
+            key = preset_dict["gesture_to_key"].get(gesture, "")
+
+            gesture_entry = ctk.CTkEntry(self.gesture_frame, width=200)
+            gesture_entry.insert(0, gesture)
+            gesture_entry.grid(row=i, column=0, padx=5, pady=2)
+
+            key_entry = ctk.CTkEntry(self.gesture_frame, width=100)
+            key_entry.insert(0, key)
+            key_entry.grid(row=i, column=1, padx=5, pady=2)
+
+            self.gesture_entries.append(gesture_entry)
+            self.key_entries.append(key_entry)
 
     def back_from_edit(self):
         self.edit_preset_frame.place_forget()
