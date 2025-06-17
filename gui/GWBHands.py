@@ -79,18 +79,19 @@ def show_create_gestures():
     # Start the webcam immediately when frame is shown
     create_gestures_frame.start_webcam()
 
-def update_current_preset(preset_name):
+def update_current_preset(preset_name, gesture_to_key):
     global selected_preset
     selected_preset = preset_name
     current_preset.set(f"Preset Used: {preset_name}")
-
+    # Optionally store gesture_to_key for use when starting the app
+    print("Gesture-to-key mapping loaded:", gesture_to_key)
 # Function for start button
 def start_gesture_app():
     if not selected_preset:
         msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
         return
     python_executable = sys.executable  # Get the current Python executable path
-    start_script_path = os.path.join("gui", "start.py") 
+    start_script_path = os.path.join("start.py") 
 
     print(f"Launching start.py with preset: {selected_preset}")
     subprocess.Popen([python_executable, start_script_path])

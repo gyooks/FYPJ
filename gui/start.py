@@ -17,16 +17,16 @@ from utils import CvFpsCalc
 from model import KeyPointClassifier
 
 
-base_dir = r"C:\Users\yipju\OneDrive\Desktop\FYPJ\gui"
-os.chdir(base_dir)
-with open('presets/new_preset.json', 'r') as f:
-    gesture_to_key = json.load(f)
-# with open('model/keypoint_classifier/keypoint_classifier_label.csv', encoding='utf-8-sig') as f:
-#     keypoint_classifier_labels = [row[0] for row in csv.reader(f)]
+# Get the directory where start.py is located
+base_dir = os.path.dirname(os.path.abspath(__file__))
 
-# gesture_to_key = {
-#     keypoint_classifier_labels[0]: "w",
-# }
+# Then use paths relative to this base
+preset_path = os.path.join(base_dir, "presets", "new_preset.json")
+model_path = os.path.join(base_dir, "model", "keypoint_classifier", "keypoint_classifier_label.csv")
+
+# Example usage
+with open(preset_path, 'r') as f:
+    gesture_to_key = json.load(f)
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -175,7 +175,8 @@ def main():
 
         # Screen reflection #############################################################
         cv.imshow('Hand Gesture Recognition', debug_image)
-
+        if cv.getWindowProperty('Hand Gesture Recognition', cv.WND_PROP_VISIBLE) < 1:
+            break
     cap.release()
     cv.destroyAllWindows()
 

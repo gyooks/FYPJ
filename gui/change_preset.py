@@ -1,18 +1,46 @@
 import customtkinter as ctk
 from edit_preset import EditPreset
+import json
+import os
 class ChangePreset(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, update_preset_callback=None, **kwargs):
         super().__init__(master, **kwargs)
-        self.selected_preset = selected_preset
         self.back_to_main_callback = back_to_main_callback
         self.update_preset_callback = update_preset_callback
-        self.presets = ["Racing", "Preset 2", "Preset 3"]
-        self.edit_preset_frame = EditPreset( master, preset_name="", back_callback=self.back_from_edit, save_changes=self.update_preset_callback,
-                                            width=1600, height=900, fg_color="transparent")
+        self.selected_preset = selected_preset
 
+        # JSON preset file path
+        self.preset_file = "presets.json"
+
+        # Load presets from file or initialize with default
+        if os.path.exists(self.preset_file):
+            with open(self.preset_file, "r") as f:
+                self.presets_dict = json.load(f)
+        else:
+            self.presets_dict = {
+                "Default": {
+                    "Peace": "w",
+                    "Open": "enter",
+                    "Close": "s",
+                    "Middle Finger": "space",
+                    "Gang sign": "shift"
+                }
+            }
+            with open(self.preset_file, "w") as f:
+                json.dump(self.presets_dict, f, indent=4)
+
+        self.presets = list(self.presets_dict.keys())
+
+        self.edit_preset_frame = EditPreset(
+            master,
+            preset_name="",
+            back_callback=self.back_from_edit,
+            save_changes=self.update_preset_callback,
+            width=1600,
+            height=900,
+            fg_color="transparent"
+        )
         self.edit_preset_frame.place_forget()
-        self.gesture_entries = []
-        self.key_entries = []
 
         self.create_widgets()
         
@@ -55,9 +83,10 @@ class ChangePreset(ctk.CTkFrame):
     def use_preset(self, preset_name):
         print(f"Using preset: {preset_name}")
         if self.update_preset_callback:
-            self.update_preset_callback(preset_name)  # Notify the main GUI
+            gesture_to_key = self.presets_dict[preset_name]
+            self.update_preset_callback(preset_name, gesture_to_key)
         self.close_and_return()
-        
+
     def delete_preset(self, preset_name):
         print(f"Deleting preset: {preset_name}")
         if preset_name in self.presets:
