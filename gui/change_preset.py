@@ -2,6 +2,7 @@ import customtkinter as ctk
 from edit_preset import EditPreset
 import json
 import os
+
 class ChangePreset(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, update_preset_callback=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -9,25 +10,23 @@ class ChangePreset(ctk.CTkFrame):
         self.update_preset_callback = update_preset_callback
         self.selected_preset = selected_preset
 
-        # JSON preset file path
-        self.preset_file = "presets.json"
+        # Load presets
+        preset_base_dir = os.path.join(os.getcwd(), "gui", "presets")
+        self.presets_dict = {}
 
-        # Load presets from file or initialize with default
-        if os.path.exists(self.preset_file):
-            with open(self.preset_file, "r") as f:
-                self.presets_dict = json.load(f)
+        if os.path.exists(preset_base_dir):
+            for folder_name in os.listdir(preset_base_dir):
+                folder_path = os.path.join(preset_base_dir, folder_name)
+                if os.path.isdir(folder_path):
+                    mapping_file = os.path.join(folder_path, "mapping.json")
+                    if os.path.exists(mapping_file):
+                        try:
+                            with open(mapping_file, "r") as f:
+                                self.presets_dict[folder_name] = json.load(f)
+                        except json.JSONDecodeError:
+                            print(f"⚠️ Invalid JSON in: {mapping_file}")
         else:
-            self.presets_dict = {
-                "Default": {
-                    "Peace": "w",
-                    "Open": "enter",
-                    "Close": "s",
-                    "Middle Finger": "space",
-                    "Gang sign": "shift"
-                }
-            }
-            with open(self.preset_file, "w") as f:
-                json.dump(self.presets_dict, f, indent=4)
+            print("⚠️ Presets folder not found:", preset_base_dir)
 
         self.presets = list(self.presets_dict.keys())
 
@@ -43,48 +42,47 @@ class ChangePreset(ctk.CTkFrame):
         self.edit_preset_frame.place_forget()
 
         self.create_widgets()
-        
+
     def create_widgets(self):
         font_ui = "Segoe UI"
         button_font = (font_ui, 16)
-        
-        # Title
+
         title = ctk.CTkLabel(self, text="Change Preset", font=(font_ui, 32, "bold"))
         title.pack(pady=20)
 
         subtitle = ctk.CTkLabel(self, text="Select Preset:", font=(font_ui, 24, "bold"))
         subtitle.pack(pady=10)
-        
+
         preset_frame = ctk.CTkFrame(self, fg_color="transparent")
         preset_frame.pack(pady=10)
-        
-        self.preset_rows = []
 
         for i, preset in enumerate(self.presets):
-            preset_label = ctk.CTkLabel(preset_frame, text=preset, font=(font_ui, 16, "bold"))
-            preset_label.grid(row=i, column=0, padx=10, pady=5)
-            
-            # Use Button
-            use_btn = ctk.CTkButton(preset_frame, text="Use", font=button_font, width=60, command=lambda p=preset: self.use_preset(p))
-            use_btn.grid(row=i, column=1, padx=5)
-            
-            del_btn = ctk.CTkButton(preset_frame, text="Delete", font=button_font, width=60, command=lambda p=preset: self.delete_preset(p))
-            del_btn.grid(row=i, column=2, padx=5)
+            ctk.CTkLabel(preset_frame, text=preset, font=(font_ui, 16, "bold")).grid(row=i, column=0, padx=10, pady=5)
 
-            edit_btn = ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60, command=lambda p=preset: self.edit_preset_window(p))
-            edit_btn.grid(row=i, column=3, padx=5)
-        
-        create_btn = ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset)
-        create_btn.pack(pady=10)
+            ctk.CTkButton(preset_frame, text="Use", font=button_font, width=60,
+                          command=lambda p=preset: self.use_preset(p)).grid(row=i, column=1, padx=5)
 
-        back_btn = ctk.CTkButton(self, text="Back", font=button_font, width=250, command=self.close_and_return)
-        back_btn.pack(pady=10)
-            
+            ctk.CTkButton(preset_frame, text="Delete", font=button_font, width=60,
+                          command=lambda p=preset: self.delete_preset(p)).grid(row=i, column=2, padx=5)
+
+            ctk.CTkButton(preset_frame, text="Edit", font=button_font, width=60,
+                          command=lambda p=preset: self.edit_preset_window(p)).grid(row=i, column=3, padx=5)
+
+        ctk.CTkButton(self, text="Create new preset", font=button_font, width=250, command=self.create_new_preset).pack(pady=10)
+        ctk.CTkButton(self, text="Back", font=button_font, width=250, command=self.close_and_return).pack(pady=10)
+
     def use_preset(self, preset_name):
-        print(f"Using preset: {preset_name}")
+        preset_base = os.path.join(os.getcwd(), "gui", "presets", preset_name)
+        preset_paths = {
+            "mapping_path": os.path.join(preset_base, "mapping.json"),
+            "keypoint_csv_path": os.path.join(preset_base, "keypoint.csv"),
+            "label_csv_path": os.path.join(preset_base, "keypoint_classifier_label.csv"),
+            "point_history_csv_path": os.path.join(preset_base, "point_history.csv")
+        }
+
+        print("✅ Sending preset paths to GWBHands.py:", preset_paths)
         if self.update_preset_callback:
-            gesture_to_key = self.presets_dict[preset_name]
-            self.update_preset_callback(preset_name, gesture_to_key)
+            self.update_preset_callback(preset_name, preset_paths)
         self.close_and_return()
 
     def delete_preset(self, preset_name):
@@ -92,7 +90,7 @@ class ChangePreset(ctk.CTkFrame):
         if preset_name in self.presets:
             self.presets.remove(preset_name)
             self.refresh_preset_list()
-    
+
     def edit_preset_window(self, preset_name):
         self.place_forget()
         self.edit_preset_frame.preset_name = preset_name
@@ -100,81 +98,19 @@ class ChangePreset(ctk.CTkFrame):
         self.edit_preset_frame.name_entry.insert(0, preset_name)
         self.edit_preset_frame.title.configure(text=f"Editing: {preset_name}")
         self.edit_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
-        
-    def get_updated_gesture_classes(self):
-        gesture_classes = []
-        for entry in self.gesture_entries:
-            gesture = entry.get().strip()
-        if gesture:
-            gesture_classes.append(gesture)
-        return gesture_classes
-    
-    def get_updated_gesture_to_key(self):
-        mapping = {}
-        for gesture_entry, key_entry in zip(self.gesture_entries, self.key_entries):
-            gesture = gesture_entry.get().strip()
-        key = key_entry.get().strip()
-        if gesture:
-            mapping[gesture] = key
-            return mapping
-        
-    def load_preset_data(self, preset_dict):
-        self.name_entry.delete(0, "end")
-        self.name_entry.insert(0, preset_dict["name"])
 
-        # Clear existing rows
-        for widget in self.gesture_frame.winfo_children():
-            widget.destroy()
-
-        self.gesture_entries = []
-        self.key_entries = []
-
-        for i, gesture in enumerate(preset_dict["gesture_classes"]):
-            key = preset_dict["gesture_to_key"].get(gesture, "")
-
-            gesture_entry = ctk.CTkEntry(self.gesture_frame, width=200)
-            gesture_entry.insert(0, gesture)
-            gesture_entry.grid(row=i, column=0, padx=5, pady=2)
-
-            key_entry = ctk.CTkEntry(self.gesture_frame, width=100)
-            key_entry.insert(0, key)
-            key_entry.grid(row=i, column=1, padx=5, pady=2)
-
-            self.gesture_entries.append(gesture_entry)
-            self.key_entries.append(key_entry)
+    def create_new_preset(self):
+        print("Creating new preset...")
 
     def back_from_edit(self):
         self.edit_preset_frame.place_forget()
         self.place(relx=0.5, rely=0.5, anchor="center")
 
-    def create_new_preset(self):
-        print("Creating new preset...")
-        # Haven't implemented this functionality yet
-        
     def close_and_return(self):
         self.back_to_main_callback()
         self.place_forget()
-        
+
     def refresh_preset_list(self):
-        # Clear and recreate preset UI (simplest way)
         for widget in self.winfo_children():
             widget.destroy()
         self.create_widgets()
-
-# For testing this page alone
-
-# if __name__ == "__main__":
-#     import customtkinter as ctk
-
-#     def dummy_callback(preset):
-#         print(f"Selected preset in test mode: {preset}")
-
-#     def back_to_main():
-#         print("Returning to main (test)")
-
-#     root = ctk.CTk()
-#     root.geometry("800x600")
-#     root.title("Test ChangePreset")
-
-#     win = ChangePreset(root, back_to_main_callback=back_to_main, update_preset_callback=dummy_callback)
-#     win.mainloop()

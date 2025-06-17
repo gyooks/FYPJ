@@ -3,13 +3,20 @@ import sys
 import subprocess
 import tkinter.messagebox as msgbox
 import os
+import nbformat
 
+from nbconvert.preprocessors import ExecutePreprocessor
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
 from how_to_use import HowtousePage  # Import HowtousePage class
 from gestures import Gestures  # Import Gestures class
 from create_gestures import CreateGestures  # Import CreateGestures class (webcam frame)
 
+
+# Get the directory where this script is running
+script_dir = os.path.dirname(os.path.abspath(__file__))
+
+notebook_path = os.path.join(script_dir, "keypoint_classification_EN.ipynb")
 
 # Create root window
 root = ctk.CTk()
@@ -23,7 +30,7 @@ root.geometry("1280x720")
 # Variables
 current_preset = ctk.StringVar(value="Preset Used: None")
 selected_preset = None
-
+selected_preset_paths = None
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
 mainmenu.place(relx=0.5, rely=0.5, anchor="center")
@@ -79,22 +86,104 @@ def show_create_gestures():
     # Start the webcam immediately when frame is shown
     create_gestures_frame.start_webcam()
 
-def update_current_preset(preset_name, gesture_to_key):
-    global selected_preset
+
+
+def update_current_preset(preset_name, preset_paths):
+    global selected_preset, selected_preset_paths
     selected_preset = preset_name
+    selected_preset_paths = preset_paths
     current_preset.set(f"Preset Used: {preset_name}")
-    # Optionally store gesture_to_key for use when starting the app
-    print("Gesture-to-key mapping loaded:", gesture_to_key)
+    print("✅ Loaded preset paths:", preset_paths)
+
+# In the section that initializes the change_preset_frame:
+change_preset_frame = ChangePreset(
+    root,
+    update_preset_callback=update_current_preset,
+    back_to_main_callback=show_mainmenu,
+    width=1600,
+    height=900,
+    fg_color="transparent"
+)
+
 # Function for start button
 def start_gesture_app():
     if not selected_preset:
         msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
         return
-    python_executable = sys.executable  # Get the current Python executable path
-    start_script_path = os.path.join("start.py") 
 
-    print(f"Launching start.py with preset: {selected_preset}")
-    subprocess.Popen([python_executable, start_script_path])
+    python_executable = sys.executable
+
+    # Since start.py is in the same folder as this file
+    start_script_path = os.path.join(os.getcwd(), "gui", "start.py")
+
+
+    # Debug output
+    print("Launching:", start_script_path)
+    print("Exists?", os.path.exists(start_script_path))
+
+    if not os.path.exists(start_script_path):
+        msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
+        return
+
+    preset_info = selected_preset_paths
+    subprocess.Popen([
+        python_executable,
+        start_script_path,
+        "--mapping", selected_preset_paths["mapping_path"],
+        "--keypoints", selected_preset_paths["keypoint_csv_path"],
+        "--labels", selected_preset_paths["label_csv_path"],
+        "--point_history", selected_preset_paths["point_history_csv_path"]
+    ])
+
+def retrain_model_from_notebook():
+    import os
+    import nbformat
+    from nbconvert.preprocessors import ExecutePreprocessor
+    import tkinter.messagebox as msgbox
+
+    # Ensure a preset is selected
+    if not selected_preset:
+        msgbox.showwarning("No Preset Selected", "Please select a preset before retraining.")
+        return
+
+    # Define paths
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    notebook_path = os.path.join(script_dir, "keypoint_classification_EN.ipynb")
+
+    if not os.path.exists(notebook_path):
+        msgbox.showerror("Notebook Not Found", f"Cannot find: {notebook_path}")
+        return
+
+    # Get preset file paths
+    try:
+        label_file = selected_preset_paths["mapping_path"]
+        dataset_file = selected_preset_paths["keypoint_csv_path"]
+    except KeyError:
+        msgbox.showerror("Preset Error", "Selected preset is missing key paths.")
+        return
+
+    try:
+        with open(notebook_path, encoding='utf-8') as f:
+            nb = nbformat.read(f, as_version=4)
+
+        # Inject dataset and label path definitions at the top of the notebook
+        inject_code = f"""
+dataset = r\"\"\"{dataset_file}\"\"\"
+label = r\"\"\"{label_file}\"\"\"
+"""
+        nb.cells.insert(0, nbformat.v4.new_code_cell(inject_code))
+
+        # Execute notebook
+        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+        ep.preprocess(nb, {'metadata': {'path': script_dir}})
+
+        msgbox.showinfo("Success", "Model retrained successfully!")
+
+    except Exception as e:
+        msgbox.showerror("Retrain Failed", f"An error occurred:\n{str(e)}")
+
+
+
 
 # Buttons
 button_font = ("Segoe UI", 16)
@@ -112,6 +201,9 @@ btn_changepreset.pack(pady=10)
 
 btn_gestures = ctk.CTkButton(mainmenu, text="Gestures", font=button_font, width=button_width, height=button_height, command=show_gestures)
 btn_gestures.pack(pady=10)
+
+btn_retrain = ctk.CTkButton(mainmenu,text="Retrain Model",font=button_font,width=button_width,height=button_height,command=retrain_model_from_notebook)
+btn_retrain.pack(pady=10)
 
 btn_tutorial = ctk.CTkButton(mainmenu, text="How To Use", font=button_font, width=button_width, height=button_height, command=show_howtouse)
 btn_tutorial.pack(pady=10)
