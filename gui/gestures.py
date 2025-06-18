@@ -1,8 +1,10 @@
 import customtkinter as ctk
+import tkinter.messagebox as messagebox
 
 class Gestures(ctk.CTkFrame):
-    def __init__(self, master, back_to_main_callback, selected_gesture=None, update_gesture_callback=None, create_gesture_callback=None, **kwargs):
+    def __init__(self, master, back_to_main_callback, selected_preset=None, selected_gesture=None, update_gesture_callback=None, create_gesture_callback=None, **kwargs):
         super().__init__(master, **kwargs)
+        self.selected_preset = selected_preset  # <-- Added here
         self.selected_gesture = selected_gesture
         self.back_to_main_callback = back_to_main_callback
         self.update_gesture_callback = update_gesture_callback
@@ -57,8 +59,14 @@ class Gestures(ctk.CTkFrame):
         # Haven't implemented this functionality yet
 
     def create_new_gesture(self):
-        print("Creating new gesture... (default fallback)")
-        # Placeholder if no callback is provided
+        if not self.selected_preset:
+            messagebox.showwarning("Preset Required", "Please select a preset before creating a new gesture.")
+            print("❌ No preset selected. Cannot create gesture.")
+            return
+
+        print("✅ Proceeding to create new gesture...")
+        if self.create_gesture_callback:
+            self.create_gesture_callback()
         
     def close_and_return(self):
         self.place_forget()  # Just hide it
@@ -85,7 +93,12 @@ if __name__ == "__main__":
     root.geometry("800x600")
     root.title("Test Gestures")
 
-    win = Gestures(root, back_to_main_callback=dummy_back, create_gesture_callback=dummy_callback)
-    win.pack(expand=True, fill="both") 
+    # Test without preset selected — should warn on creating gesture
+    win_no_preset = Gestures(root, back_to_main_callback=dummy_back, create_gesture_callback=dummy_callback)
+    win_no_preset.pack(expand=True, fill="both")
+
+    # Uncomment below to test with preset selected — should allow creation without warning
+    # win_with_preset = Gestures(root, back_to_main_callback=dummy_back, create_gesture_callback=dummy_callback, selected_preset="ExamplePreset")
+    # win_with_preset.pack(expand=True, fill="both")
 
     root.mainloop()

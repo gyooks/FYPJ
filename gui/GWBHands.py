@@ -59,6 +59,10 @@ def show_changepreset():
     change_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_gestures():
+    if not selected_preset:
+        msgbox.showwarning("No Preset Selected", "Please select a preset before accessing Gestures.")
+        return  # Prevent switching frames if no preset selected
+
     mainmenu.place_forget()
     if 'create_gestures_frame' in globals() and create_gestures_frame is not None:
         create_gestures_frame.place_forget()
