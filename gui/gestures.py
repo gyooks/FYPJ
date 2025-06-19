@@ -18,21 +18,21 @@ class Gestures(ctk.CTkFrame):
 
     def load_gestures_from_csv(self):
         gestures = []
-        if self.selected_preset and "mapping_path" in self.selected_preset:
-            mapping_path = self.selected_preset["mapping_path"]
-            if os.path.exists(mapping_path):
+        if self.selected_preset and "label_csv_path" in self.selected_preset:
+            label_csv_path = self.selected_preset["label_csv_path"]
+            if os.path.exists(label_csv_path):
                 try:
-                    with open(mapping_path, 'r', encoding='utf-8') as f:
+                    with open(label_csv_path, 'r', encoding='utf-8') as f:
                         reader = csv.reader(f)
-                        gestures = [row[0] for row in reader if row]  # Skip empty rows
+                        gestures = [row[0].strip() for row in reader if row]  # Read first column, strip whitespace
                 except Exception as e:
                     print(f"❌ Failed to read gesture names from CSV: {e}")
                     messagebox.showerror("CSV Error", f"Failed to load gesture names:\n{e}")
             else:
-                print("❌ mapping_path does not exist:", mapping_path)
-                messagebox.showerror("Missing File", f"Could not find gesture label file:\n{mapping_path}")
+                print("❌ label_csv_path does not exist:", label_csv_path)
+                messagebox.showerror("Missing File", f"Could not find gesture label file:\n{label_csv_path}")
         else:
-            print("❌ No valid selected_preset or mapping_path")
+            print("❌ No valid selected_preset or label_csv_path")
         return gestures if gestures else ["No gestures found"]
 
     def create_widgets(self):

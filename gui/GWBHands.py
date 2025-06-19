@@ -59,13 +59,27 @@ def show_changepreset():
     change_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_gestures():
-    if not selected_preset:
+    global gestures_frame
+
+    if not selected_preset_paths or "mapping_path" not in selected_preset_paths:
         msgbox.showwarning("No Preset Selected", "Please select a preset before accessing Gestures.")
-        return  # Prevent switching frames if no preset selected
+        return
 
     mainmenu.place_forget()
-    if 'create_gestures_frame' in globals() and create_gestures_frame is not None:
-        create_gestures_frame.place_forget()
+
+    # Destroy old gestures_frame if any
+    if 'gestures_frame' in globals() and gestures_frame is not None:
+        gestures_frame.destroy()
+        gestures_frame = None
+
+    # Create a fresh Gestures frame with current preset paths
+    gestures_frame = Gestures(
+        root,
+        back_to_main_callback=show_mainmenu,
+        selected_preset=selected_preset_paths,
+        update_gesture_callback=update_current_preset,
+        create_gesture_callback=show_create_gestures
+    )
     gestures_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_howtouse():
