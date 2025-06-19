@@ -2,21 +2,25 @@ import customtkinter as ctk
 import cv2
 from PIL import Image
 import mediapipe as mp
-import numpy as np
+import os
 
 
 class CreateGestures(ctk.CTkFrame):
-    def __init__(self, master, back_to_gestures_callback, **kwargs):
+    def __init__(self, master, back_to_gestures_callback, selected_preset=None, **kwargs):
         super().__init__(master, **kwargs)
         self.back_to_gestures_callback = back_to_gestures_callback
+        self.selected_preset = selected_preset or {}
 
         self.cap = None
         self.is_running = False
-
         self.WIDTH = 640
         self.HEIGHT = 480
 
-        # Initialize MediaPipe
+        # Get CSV path from preset (fallback if missing)
+        self.csv_path = self.selected_preset.get("label_csv_path", "keypoint_classifier_label.csv")
+        self.current_gesture_name = None
+
+        # Initialize MediaPipe Hands
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
@@ -58,22 +62,55 @@ class CreateGestures(ctk.CTkFrame):
         if not self.is_running:
             self.cap = cv2.VideoCapture(0)
             if not self.cap.isOpened():
-                print("Error: Could not open webcam.")
+                print("❌ Error: Could not open webcam.")
                 return
             self.is_running = True
             self.update_frame()
 
     def start_recording(self):
-        # Placeholder: Add logic here to start recording hand gestures
-        print("Start to Record button clicked - implement recording logic here.")
+        dialog = ctk.CTkInputDialog(title="Gesture Name", text="Enter gesture name:")
+        gesture_name = dialog.get_input()
+
+        if gesture_name:
+            self.current_gesture_name = gesture_name.strip()
+            print(f"🟢 Recording started for gesture: {self.current_gesture_name}")
+        else:
+            self.current_gesture_name = None
+            print("⚠️ Gesture name input canceled.")
 
     def capture(self):
-        # Placeholder: Add logic here to start capturing hand gestures
-        print("Capture clicked - implement recording logic here.")
+        # Optional: implement later to collect hand landmarks
+        print("📸 Capture clicked - implement logic here if needed.")
 
     def save_gesture(self):
-        # Placeholder for gesture saving logic
-        print("Save button clicked - implement gesture saving here.")
+        if not self.current_gesture_name:
+            print("❌ No gesture name provided.")
+            return
+
+        try:
+            # Ensure directory exists
+            os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
+
+            # Check if file ends with newline
+            needs_newline = False
+            if os.path.exists(self.csv_path):
+                with open(self.csv_path, 'rb') as f:
+                    f.seek(-1, os.SEEK_END)
+                    last_char = f.read(1)
+                    if last_char != b'\n':
+                        needs_newline = True
+
+            # Append the gesture name, preceded by newline if needed
+            with open(self.csv_path, mode='a', encoding='utf-8') as f:
+                if needs_newline:
+                    f.write('\n')
+                f.write(self.current_gesture_name + '\n')
+
+            print(f"✅ Gesture '{self.current_gesture_name}' saved to {self.csv_path}")
+            self.current_gesture_name = None
+
+        except Exception as e:
+            print(f"❌ Error saving gesture: {e}")
 
     def stop_webcam(self):
         if self.is_running:
@@ -90,9 +127,8 @@ class CreateGestures(ctk.CTkFrame):
 
         ret, frame = self.cap.read()
         if ret:
-            frame = cv2.flip(frame, 1)  # Mirror image for natural interaction
+            frame = cv2.flip(frame, 1)
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
-
             results = self.hands.process(frame_rgb)
 
             if results.multi_hand_landmarks:
@@ -101,11 +137,10 @@ class CreateGestures(ctk.CTkFrame):
                         frame,
                         hand_landmarks,
                         self.mp_hands.HAND_CONNECTIONS,
-                        self.mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2),  # White landmarks
-                        self.mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2)   # White connections
-)
+                        self.mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2),
+                        self.mp_drawing.DrawingSpec(color=(255, 255, 255), thickness=2, circle_radius=2)
+                    )
 
-            # Resize and display
             frame = cv2.resize(frame, (self.WIDTH, self.HEIGHT))
             frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
             img = Image.fromarray(frame_rgb)
@@ -114,7 +149,7 @@ class CreateGestures(ctk.CTkFrame):
             self.video_label.configure(image=ctk_img)
             self.video_label.image = ctk_img
         else:
-            print("Failed to grab frame")
+            print("❌ Failed to grab frame")
 
         self.after(15, self.update_frame)
 
@@ -124,6 +159,7 @@ class CreateGestures(ctk.CTkFrame):
         self.back_to_gestures_callback()
 
 
+# Optional test run
 if __name__ == "__main__":
     def dummy_back():
         print("Back pressed")
@@ -132,7 +168,7 @@ if __name__ == "__main__":
     root.geometry("900x700")
     root.title("Test CreateGestures")
 
-    frame = CreateGestures(root, back_to_gestures_callback=dummy_back)
+    frame = CreateGestures(root, back_to_gestures_callback=dummy_back, selected_preset={"label_csv_path": "keypoint_classifier_label.csv"})
     frame.pack(expand=True, fill="both")
 
     root.mainloop()

@@ -91,19 +91,31 @@ def show_create_gestures():
     gestures_frame.place_forget()
     global create_gestures_frame
 
-    # If frame exists, stop webcam and destroy it to reset cleanly
+    # Destroy old gesture creation frame
     if 'create_gestures_frame' in globals() and create_gestures_frame is not None:
         create_gestures_frame.stop_webcam()
         create_gestures_frame.destroy()
         create_gestures_frame = None
 
-    # Create a fresh instance of CreateGestures
-    create_gestures_frame = CreateGestures(root, back_to_gestures_callback=show_gestures, width=1280, height=720, fg_color="transparent")
+    # Define a local callback to handle "back" AND refresh gestures list
+    def on_back_from_create():
+        create_gestures_frame.stop_webcam()
+        create_gestures_frame.place_forget()
+        show_gestures()
+        if gestures_frame:  # ✅ Refresh gestures if it's loaded
+            gestures_frame.refresh_gesture_list()
+
+    # Create new gesture creation frame with selected preset
+    create_gestures_frame = CreateGestures(
+        root,
+        back_to_gestures_callback=on_back_from_create,  # ✅ Call our callback
+        selected_preset=selected_preset_paths,
+        width=1280,
+        height=720,
+        fg_color="transparent"
+    )
     create_gestures_frame.place(relx=0.5, rely=0.5, anchor="center")
-
-    # Start the webcam immediately when frame is shown
     create_gestures_frame.start_webcam()
-
 
 
 def update_current_preset(preset_name, preset_paths):
