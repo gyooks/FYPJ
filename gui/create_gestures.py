@@ -53,11 +53,11 @@ class CreateGestures(ctk.CTkFrame):
         start_record_btn = ctk.CTkButton(btn_frame, text="Start Recording", font=button_font, command=self.start_recording)
         start_record_btn.grid(row=0, column=0, padx=10)
 
-        capture_btn = ctk.CTkButton(btn_frame, text="Capture", font=button_font, command=self.capture)
-        capture_btn.grid(row=0, column=1, padx=10)
+        self.capture_btn = ctk.CTkButton(btn_frame, text="Capture", font=button_font, command=self.capture, state="disabled")
+        self.capture_btn.grid(row=0, column=1, padx=10)
 
-        save_btn = ctk.CTkButton(btn_frame, text="Stop to Save", font=button_font, command=self.save_gesture)
-        save_btn.grid(row=0, column=2, padx=10)
+        self.save_btn = ctk.CTkButton(btn_frame, text="Stop to Save", font=button_font, command=self.save_gesture, state="disabled")
+        self.save_btn.grid(row=0, column=2, padx=10)
 
         back_btn = ctk.CTkButton(btn_frame, text="Back", font=button_font, command=self.go_back)
         back_btn.grid(row=0, column=3, padx=10)
@@ -78,6 +78,8 @@ class CreateGestures(ctk.CTkFrame):
         if gesture_name:
             self.current_gesture_name = gesture_name.strip()
             print(f"🟢 Recording started for gesture: {self.current_gesture_name}")
+            self.capture_btn.configure(state="normal")
+            self.save_btn.configure(state="normal")
         else:
             self.current_gesture_name = None
             print("⚠️ Gesture name input canceled.")
@@ -117,7 +119,7 @@ class CreateGestures(ctk.CTkFrame):
             return
 
         try:
-            # Save label
+            # Save label to label CSV
             os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
             needs_newline = False
             if os.path.exists(self.csv_path):
@@ -132,12 +134,20 @@ class CreateGestures(ctk.CTkFrame):
                     f.write('\n')
                 f.write(self.current_gesture_name + '\n')
 
-            # Get gesture index
+            # Get the index of the gesture (line number in label CSV minus 1)
             with open(self.csv_path, encoding='utf-8') as f:
                 gesture_index = sum(1 for _ in f) - 1
 
-            # Save all keypoint samples to keypoint.csv
+            # Ensure keypoint.csv ends with newline before appending
             keypoint_csv_path = self.selected_preset.get("keypoint_csv_path", "keypoint.csv")
+            if os.path.exists(keypoint_csv_path):
+                with open(keypoint_csv_path, 'rb+') as f:
+                    f.seek(-1, os.SEEK_END)
+                    last_char = f.read(1)
+                    if last_char != b'\n':
+                        f.write(b'\n')
+
+            # Append captured keypoints with gesture index
             with open(keypoint_csv_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 for kp in self.captured_keypoints:
@@ -148,6 +158,9 @@ class CreateGestures(ctk.CTkFrame):
             self.current_gesture_name = None
             self.captured_keypoints.clear()
             self.current_label_index = None
+
+            self.capture_btn.configure(state="disabled")
+            self.save_btn.configure(state="disabled")
 
         except Exception as e:
             print(f"❌ Error saving gesture: {e}")
@@ -193,7 +206,6 @@ class CreateGestures(ctk.CTkFrame):
 
         self.after(15, self.update_frame)
 
-
     def pre_process_landmark(self, landmark_list):
         base_x, base_y = landmark_list[0]
         relative_landmarks = [[x - base_x, y - base_y] for x, y in landmark_list]
@@ -208,7 +220,6 @@ class CreateGestures(ctk.CTkFrame):
         normalized = [val / max_value for val in flattened]
 
         return normalized
-
 
     def show_success_prompt(self, message):
         popup = ctk.CTkToplevel(self)
