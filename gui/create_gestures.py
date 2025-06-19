@@ -3,6 +3,7 @@ import cv2
 from PIL import Image
 import mediapipe as mp
 import os
+import csv
 
 
 class CreateGestures(ctk.CTkFrame):
@@ -15,6 +16,9 @@ class CreateGestures(ctk.CTkFrame):
         self.is_running = False
         self.WIDTH = 640
         self.HEIGHT = 480
+
+        self.captured_keypoints = []  # Stores captured gesture samples
+        self.current_label_index = None  # Stores label index of the current gesture
 
         # Get CSV path from preset (fallback if missing)
         self.csv_path = self.selected_preset.get("label_csv_path", "keypoint_classifier_label.csv")
@@ -79,8 +83,33 @@ class CreateGestures(ctk.CTkFrame):
             print("⚠️ Gesture name input canceled.")
 
     def capture(self):
-        # Optional: implement later to collect hand landmarks
-        print("📸 Capture clicked - implement logic here if needed.")
+        if not self.current_gesture_name:
+            print("❌ You must start recording with a name before capturing.")
+            return
+
+        ret, frame = self.cap.read()
+        if not ret:
+            print("❌ Failed to capture frame.")
+            return
+
+        frame = cv2.flip(frame, 1)
+        frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+        results = self.hands.process(frame_rgb)
+
+        if results.multi_hand_landmarks:
+            for hand_landmarks in results.multi_hand_landmarks:
+                # Get raw 2D landmarks
+                h, w, _ = frame.shape
+                landmark_list = []
+                for lm in hand_landmarks.landmark:
+                    landmark_list.append([int(lm.x * w), int(lm.y * h)])
+
+                # Preprocess like in start.py
+                processed = self.pre_process_landmark(landmark_list)
+                self.captured_keypoints.append(processed)
+                print(f"✅ Captured {len(self.captured_keypoints)} samples.")
+        else:
+            print("⚠️ No hands detected.")
 
     def save_gesture(self):
         if not self.current_gesture_name:
@@ -88,10 +117,8 @@ class CreateGestures(ctk.CTkFrame):
             return
 
         try:
-            # Ensure directory exists
+            # Save label
             os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
-
-            # Check if file ends with newline
             needs_newline = False
             if os.path.exists(self.csv_path):
                 with open(self.csv_path, 'rb') as f:
@@ -100,14 +127,27 @@ class CreateGestures(ctk.CTkFrame):
                     if last_char != b'\n':
                         needs_newline = True
 
-            # Append the gesture name, preceded by newline if needed
             with open(self.csv_path, mode='a', encoding='utf-8') as f:
                 if needs_newline:
                     f.write('\n')
                 f.write(self.current_gesture_name + '\n')
 
-            print(f"✅ Gesture '{self.current_gesture_name}' saved to {self.csv_path}")
+            # Get gesture index
+            with open(self.csv_path, encoding='utf-8') as f:
+                gesture_index = sum(1 for _ in f) - 1
+
+            # Save all keypoint samples to keypoint.csv
+            keypoint_csv_path = self.selected_preset.get("keypoint_csv_path", "keypoint.csv")
+            with open(keypoint_csv_path, 'a', newline='') as f:
+                writer = csv.writer(f)
+                for kp in self.captured_keypoints:
+                    writer.writerow([gesture_index] + kp)
+
+            print(f"✅ Gesture '{self.current_gesture_name}' saved with {len(self.captured_keypoints)} samples.")
+            self.show_success_prompt("✅ Gesture name and movement saved!")
             self.current_gesture_name = None
+            self.captured_keypoints.clear()
+            self.current_label_index = None
 
         except Exception as e:
             print(f"❌ Error saving gesture: {e}")
@@ -152,6 +192,35 @@ class CreateGestures(ctk.CTkFrame):
             print("❌ Failed to grab frame")
 
         self.after(15, self.update_frame)
+
+
+    def pre_process_landmark(self, landmark_list):
+        base_x, base_y = landmark_list[0]
+        relative_landmarks = [[x - base_x, y - base_y] for x, y in landmark_list]
+
+        # Flatten
+        flattened = sum(relative_landmarks, [])
+
+        # Normalize
+        max_value = max(abs(val) for val in flattened)
+        if max_value == 0:
+            max_value = 1
+        normalized = [val / max_value for val in flattened]
+
+        return normalized
+
+
+    def show_success_prompt(self, message):
+        popup = ctk.CTkToplevel(self)
+        popup.title("Success")
+        popup.geometry("300x120")
+        popup.grab_set()
+
+        label = ctk.CTkLabel(popup, text=message, font=("Segoe UI", 14))
+        label.pack(pady=20)
+
+        ok_button = ctk.CTkButton(popup, text="OK", command=popup.destroy)
+        ok_button.pack()
 
     def go_back(self):
         self.stop_webcam()
