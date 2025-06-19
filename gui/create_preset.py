@@ -38,7 +38,19 @@ class CreatePreset(ctk.CtkFrame):
         
         self.dropdown = ctk.CTkOptionMenu(self, values=self.gesture_list, variable=self.selected_gesture)
         self.dropdown.pack(pady=5)
-    
+
+        
+        add_btn = ctk.CTkButton(self, text="Add to Mapping", command=self.add_mapping)
+        add_btn.pack(pady=10)
+
+        self.mapping_display = ctk.CTkLabel(self, text="", font=("Segoe UI", 14), justify="left")
+        self.mapping_display.pack(pady=10)
+
+        save_btn = ctk.CTkButton(self, text="Save Preset", command=self.save_preset)
+        save_btn.pack(pady=10)
+
+        back_btn = ctk.CTkButton(self, text="Back", command=self.back_callback)
+        back_btn.pack(pady=10)
         
     def save_preset(self):
         preset_name = self.entry.get()
