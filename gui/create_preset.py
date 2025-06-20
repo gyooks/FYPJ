@@ -7,6 +7,7 @@ font_family = "Segoe UI"
 class CreatePreset(ctk.CTkFrame):
     def __init__(self, master, gesture_csv_path, save_preset_callback, back_callback, **kwargs):
         super().__init__(master, **kwargs)
+        self.preset_name = ctk.StringVar()
         self.gesture_csv_path = gesture_csv_path
         self.save_preset_callback = save_preset_callback
         self.back_callback = back_callback
@@ -32,6 +33,12 @@ class CreatePreset(ctk.CTkFrame):
     def create_widgets(self):
         title = ctk.CTkLabel(self, text="Create New Preset", font=(font_family, 32, "bold"))
         title.pack(pady=20)
+        
+        preset_name_label = ctk.CTkLabel(self, text="Preset Name:", font=(font_family, 16))
+        preset_name_label.pack(pady=5)
+
+        self.preset_name_entry = ctk.CTkEntry(self, textvariable=self.preset_name)
+        self.preset_name_entry.pack(pady=5)
         
         dropdown_label = ctk.CTkLabel(self, text="Select Gesture:", font=(font_family, 16))
         dropdown_label.pack(pady=5)
@@ -82,6 +89,6 @@ class CreatePreset(ctk.CTkFrame):
                 json.dump(self.gesture_key_mapping, f, indent=4)
             messagebox.showinfo("Saved", f"Preset saved to:\n{file_path}")
             if self.save_preset_callback:
-                self.save_preset_callback(file_path)
+                self.save_preset_callback(file_path, self.preset_name.get().strip())
         except Exception as e:
             messagebox.showerror("Error", f"Failed to save preset:\n{e}")

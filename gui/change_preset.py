@@ -112,10 +112,12 @@ class ChangePreset(ctk.CTkFrame):
             height=900,
             fg_color="transparent"
         )
+        self.create_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
+        
         #test
         print("Current Working Directory:", os.getcwd())
-        print("CSV Path:", os.path.join(os.getcwd(), "gestures.csv"))
-        print("Exists:", os.path.exists(os.path.join(os.getcwd(), "gestures.csv")))
+        print("CSV Path:", os.path.join(os.getcwd(), "keypoint_classifier_label.csv"))
+        print("Exists:", os.path.exists(os.path.join(os.getcwd(), "keypoint_classifier_label.csv")))
 
     def back_from_edit(self):
         self.edit_preset_frame.place_forget()
