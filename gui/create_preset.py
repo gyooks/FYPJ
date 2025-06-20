@@ -1,23 +1,23 @@
 import customtkinter as ctk
 import os
 import csv
+import json
 import tkinter.messagebox as messagebox
-
+font_family = "Segoe UI"
 class CreatePreset(ctk.CtkFrame):
-    def __init__(self, master=None, **kwargs):
+    def __init__(self, master, gesture_csv_path, save_preset_callback, back_callback, **kwargs):
         super().__init__(master, **kwargs)
-        self.grid_columnconfigure(0, weight=1)
-        self.grid_rowconfigure(0, weight=1)
+        self.gesture_csv_path = gesture_csv_path
+        self.save_preset_callback = save_preset_callback
+        self.back_callback = back_callback
+        self.gesture_list = self.load_gestures()
+        self.gesture_key_mapping = {}  # {gesture: key}
+        self.selected_gesture = ctk.StringVar(value=self.gesture_list[0] if self.gesture_list else "None")
+        
+    
+        self.create_widgets()
 
-        self.label = ctk.CTkLabel(self, text="Create Preset")
-        self.label.grid(row=0, column=0, padx=10, pady=10)
-
-        self.entry = ctk.CTkEntry(self, placeholder_text="Enter preset name")
-        self.entry.grid(row=1, column=0, padx=10, pady=10)
-
-        self.button = ctk.CTkButton(self, text="Save Preset", command=self.save_preset)
-        self.button.grid(row=2, column=0, padx=10, pady=10)
-
+    
     def load_gestures(self):
         gestures = []
         if os.path.exists(self.gesture_csv_path):
@@ -30,10 +30,10 @@ class CreatePreset(ctk.CtkFrame):
         return gestures if gestures else ["No gestures found"]
 
     def create_widgets(self):
-        title = ctk.CTkLabel(self, text="Create New Preset", font=("Segoe UI", 32, "bold"))
+        title = ctk.CTkLabel(self, text="Create New Preset", font=(font_family, 32, "bold"))
         title.pack(pady=20)
         
-        dropdown_label = ctk.CTkLabel(self, text="Select Gesture:", font=("Segoe UI", 16))
+        dropdown_label = ctk.CTkLabel(self, text="Select Gesture:", font=(font_family, 16))
         dropdown_label.pack(pady=5)
         
         self.dropdown = ctk.CTkOptionMenu(self, values=self.gesture_list, variable=self.selected_gesture)
@@ -43,7 +43,7 @@ class CreatePreset(ctk.CtkFrame):
         add_btn = ctk.CTkButton(self, text="Add to Mapping", command=self.add_mapping)
         add_btn.pack(pady=10)
 
-        self.mapping_display = ctk.CTkLabel(self, text="", font=("Segoe UI", 14), justify="left")
+        self.mapping_display = ctk.CTkLabel(self, text="", font=(font_family, 14), justify="left")
         self.mapping_display.pack(pady=10)
 
         save_btn = ctk.CTkButton(self, text="Save Preset", command=self.save_preset)
@@ -52,6 +52,36 @@ class CreatePreset(ctk.CtkFrame):
         back_btn = ctk.CTkButton(self, text="Back", command=self.back_callback)
         back_btn.pack(pady=10)
         
+    def add_mapping(self):
+        gesture = self.selected_gesture.get()
+        key = self.key_entry.get().strip().lower()
+
+        if not key:
+            messagebox.showwarning("Missing Input", "Please enter a key to assign.")
+            return
+
+        self.gesture_key_mapping[gesture] = key
+        self.key_entry.delete(0, "end")
+        self.update_mapping_display()
+
+    def update_mapping_display(self):
+        mapping_text = "\n".join([f"{gesture}: {key}" for gesture, key in self.gesture_key_mapping.items()])
+        self.mapping_display.configure(text=mapping_text)
+
     def save_preset(self):
-        preset_name = self.entry.get()
-        print(f"Preset '{preset_name}' saved!")  # Replace with actual save logic
+        if not self.gesture_key_mapping:
+            messagebox.showwarning("No Mapping", "You must assign at least one gesture to a key.")
+            return
+
+        file_path = ctk.filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
+        if not file_path:
+            return
+
+        try:
+            with open(file_path, "w") as f:
+                json.dump(self.gesture_key_mapping, f, indent=4)
+            messagebox.showinfo("Saved", f"Preset saved to:\n{file_path}")
+            if self.save_preset_callback:
+                self.save_preset_callback(file_path)
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to save preset:\n{e}")
