@@ -1,5 +1,6 @@
 import customtkinter as ctk
 from edit_preset import EditPreset
+from create_preset import CreatePreset
 import json
 import os
 
@@ -101,6 +102,20 @@ class ChangePreset(ctk.CTkFrame):
 
     def create_new_preset(self):
         print("Creating new preset...")
+        self.place_forget()
+        self.create_preset_frame = CreatePreset(
+            master=self.master,
+            gesture_csv_path=os.path.join(os.getcwd(), "keypoint_classifier_label.csv"),
+            save_preset_callback=self.update_preset_callback,
+            back_callback=self.close_and_return,
+            width=1600,
+            height=900,
+            fg_color="transparent"
+        )
+        #test
+        print("Current Working Directory:", os.getcwd())
+        print("CSV Path:", os.path.join(os.getcwd(), "gestures.csv"))
+        print("Exists:", os.path.exists(os.path.join(os.getcwd(), "gestures.csv")))
 
     def back_from_edit(self):
         self.edit_preset_frame.place_forget()
