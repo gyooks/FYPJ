@@ -33,20 +33,26 @@ class CreatePreset(ctk.CTkFrame):
     def create_widgets(self):
         title = ctk.CTkLabel(self, text="Create New Preset", font=(font_family, 32, "bold"))
         title.pack(pady=20)
-        
+    
         preset_name_label = ctk.CTkLabel(self, text="Preset Name:", font=(font_family, 16))
         preset_name_label.pack(pady=5)
 
         self.preset_name_entry = ctk.CTkEntry(self, textvariable=self.preset_name)
         self.preset_name_entry.pack(pady=5)
-        
+
         dropdown_label = ctk.CTkLabel(self, text="Select Gesture:", font=(font_family, 16))
         dropdown_label.pack(pady=5)
-        
+
         self.dropdown = ctk.CTkOptionMenu(self, values=self.gesture_list, variable=self.selected_gesture)
         self.dropdown.pack(pady=5)
 
-        
+        key_label = ctk.CTkLabel(self, text="Enter Key to Assign:", font=(font_family, 16))
+        key_label.pack(pady=5)
+
+        self.key_entry = ctk.CTkEntry(self)
+        self.key_entry.pack(pady=5)
+
+
         add_btn = ctk.CTkButton(self, text="Add to Mapping", command=self.add_mapping)
         add_btn.pack(pady=10)
 
