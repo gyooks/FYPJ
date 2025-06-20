@@ -4,7 +4,7 @@ import csv
 import json
 import tkinter.messagebox as messagebox
 font_family = "Segoe UI"
-class CreatePreset(ctk.CtkFrame):
+class CreatePreset(ctk.CTkFrame):
     def __init__(self, master, gesture_csv_path, save_preset_callback, back_callback, **kwargs):
         super().__init__(master, **kwargs)
         self.gesture_csv_path = gesture_csv_path
