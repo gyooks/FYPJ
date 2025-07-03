@@ -5,30 +5,58 @@ import json
 import tkinter.messagebox as messagebox
 font_family = "Segoe UI"
 class CreatePreset(ctk.CTkFrame):
-    def __init__(self, master, gesture_csv_path, save_preset_callback, back_callback, **kwargs):
+    def __init__(self, master, gesture_csv_path, save_dir, back_callback, **kwargs):
         super().__init__(master, **kwargs)
-        self.preset_name = ctk.StringVar()
         self.gesture_csv_path = gesture_csv_path
-        self.save_preset_callback = save_preset_callback
+        self.save_dir = save_dir
         self.back_callback = back_callback
-        self.gesture_list = self.load_gestures()
-        self.gesture_key_mapping = {}  # {gesture: key}
-        self.selected_gesture = ctk.StringVar(value=self.gesture_list[0] if self.gesture_list else "None")
-        
-    
-        self.create_widgets()
+        self.mapping_rows = []
+        self.gesture_options = self.load_gestures()
+        self.preset_name = ctk.StringVar()
+
+        # Title
+        ctk.CTkLabel(self, text="Create new preset", font=(font_family, 20, "bold")).pack(pady=(10, 20))
+
+        # Preset Name Row
+        preset_frame = ctk.CTkFrame(self, fg_color="transparent")
+        preset_frame.pack(pady=(0, 10))
+        ctk.CTkLabel(preset_frame, text="Preset Name:", font=(font_family, 14)).pack(side="left")
+        ctk.CTkEntry(preset_frame, textvariable=self.preset_name, width=150).pack(side="left", padx=10)
+        ctk.CTkButton(preset_frame, text="+", width=30, command=self.add_mapping_row).pack(side="left")
+
+        # Container for gesture–key mapping rows
+        self.mapping_container = ctk.CTkFrame(self, fg_color="transparent")
+        self.mapping_container.pack(pady=(5, 10))
+        self.add_mapping_row()  # Add first row by default
+
+        # Confirm/Cancel Buttons
+        button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        button_frame.pack(pady=(20, 10))
+
+        ctk.CTkButton(button_frame, text="Confirm", command=self.save_preset).pack(side="left", padx=10)
+        ctk.CTkButton(button_frame, text="Cancel", command=self.back_callback).pack(side="left", padx=10)
 
     
     def load_gestures(self):
-        gestures = []
-        if os.path.exists(self.gesture_csv_path):
-            try:
-                with open(self.gesture_csv_path, 'r', encoding='utf-8') as f:
-                    reader = csv.reader(f)
-                    gestures = [row[0].strip() for row in reader if row]
-            except Exception as e:
-                messagebox.showerror("Error", f"Could not load gestures:\n{e}")
-        return gestures if gestures else ["No gestures found"]
+        gestures = set()
+        presets_path = self.save_dir
+    
+        if os.path.exists(presets_path):
+            for folder_name in os.listdir(presets_path):
+                folder_path = os.path.join(presets_path, folder_name)
+                if os.path.isdir(folder_path):
+                    label_csv = os.path.join(folder_path, "keypoint_classifier_label.csv")
+                    if os.path.exists(label_csv):
+                        with open(label_csv, newline='', encoding='utf-8') as csvfile:
+                            reader = csv.reader(csvfile)
+                            for row in reader:
+                                if row:
+                                    gestures.add(row[0].strip())
+    
+        if not gestures:
+            messagebox.showwarning("No Gestures Found", "No gesture labels were found in any preset folders.")
+            return []
+        return sorted(list(gestures))
 
     def create_widgets(self):
         title = ctk.CTkLabel(self, text="Create New Preset", font=(font_family, 32, "bold"))
@@ -65,36 +93,74 @@ class CreatePreset(ctk.CTkFrame):
         back_btn = ctk.CTkButton(self, text="Back", command=self.back_callback)
         back_btn.pack(pady=10)
         
-    def add_mapping(self):
-        gesture = self.selected_gesture.get()
-        key = self.key_entry.get().strip().lower()
-
-        if not key:
-            messagebox.showwarning("Missing Input", "Please enter a key to assign.")
-            return
-
-        self.gesture_key_mapping[gesture] = key
-        self.key_entry.delete(0, "end")
-        self.update_mapping_display()
+    def add_mapping_row(self):
+        row_frame = ctk.CTkFrame(self.mapping_container, fg_color="transparent")
+        row_frame.pack(pady=5)  
+        
+        gesture_var = ctk.StringVar(value=self.gesture_options[0] if self.gesture_options else "")
+        key_var = ctk.StringVar()   
+        
+        gesture_menu = ctk.CTkOptionMenu(row_frame, variable=gesture_var, values=self.gesture_options, width=150)
+        gesture_menu.pack(side="left", padx=5)
+        
+        ctk.CTkLabel(row_frame, text="Key Mapped:", font=(font_family, 12)).pack(side="left", padx=5)
+        key_entry = ctk.CTkEntry(row_frame, textvariable=key_var, width=100)
+        key_entry.pack(side="left", padx=5) 
+        self.mapping_rows.append((gesture_var, key_var))
 
     def update_mapping_display(self):
         mapping_text = "\n".join([f"{gesture}: {key}" for gesture, key in self.gesture_key_mapping.items()])
         self.mapping_display.configure(text=mapping_text)
 
     def save_preset(self):
-        if not self.gesture_key_mapping:
-            messagebox.showwarning("No Mapping", "You must assign at least one gesture to a key.")
+        name = self.preset_name.get().strip()
+        if not name:
+            messagebox.showerror("Error", "Preset name cannot be empty.")
             return
 
-        file_path = ctk.filedialog.asksaveasfilename(defaultextension=".json", filetypes=[("JSON files", "*.json")])
-        if not file_path:
+        gesture_to_key = {}
+        gesture_labels = []
+
+        for gesture_var, key_var in self.mapping_rows:
+            gesture = gesture_var.get().strip()
+            key = key_var.get().strip()
+            if not gesture or not key:
+                continue
+            gesture_to_key[gesture] = key
+            if gesture not in gesture_labels:
+                gesture_labels.append(gesture)
+
+        if not gesture_to_key:
+            messagebox.showerror("Error", "No valid gesture mappings.")
             return
+
+        # Create a dedicated folder for the preset
+        preset_folder = os.path.join(self.save_dir, name)
+        if os.path.exists(preset_folder):
+            messagebox.showerror("Error", f"A preset named '{name}' already exists.")
+            return
+
+        os.makedirs(preset_folder)
 
         try:
-            with open(file_path, "w") as f:
-                json.dump(self.gesture_key_mapping, f, indent=4)
-            messagebox.showinfo("Saved", f"Preset saved to:\n{file_path}")
-            if self.save_preset_callback:
-                self.save_preset_callback(file_path, self.preset_name.get().strip())
+            # Save JSON file with gesture-key mapping
+            with open(os.path.join(preset_folder, f"{name}.json"), "w", encoding="utf-8") as jsonfile:
+                json.dump(gesture_to_key, jsonfile, indent=4)
+
+            # Save gesture labels
+            with open(os.path.join(preset_folder, "keypoint_classifier_label.csv"), "w", newline='', encoding='utf-8') as labelfile:
+                writer = csv.writer(labelfile)
+                for label in gesture_labels:
+                    writer.writerow([label])
+
+            # Save dummy keypoints CSV (all-zero rows for each gesture)
+            with open(os.path.join(preset_folder, "keypoint_classifier.csv"), "w", newline='', encoding='utf-8') as classifierfile:
+                writer = csv.writer(classifierfile)
+                for _ in gesture_labels:
+                    writer.writerow([0] * 21)  # Replace 21 with actual number of keypoints if known
+
+            messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
+            self.back_callback()
+
         except Exception as e:
-            messagebox.showerror("Error", f"Failed to save preset:\n{e}")
+            messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
