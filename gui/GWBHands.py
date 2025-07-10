@@ -11,7 +11,7 @@ from change_preset import ChangePreset  # Import ChangePreset class
 from how_to_use import HowtousePage  # Import HowtousePage class
 from gestures import Gestures  # Import Gestures class
 from create_gestures import CreateGestures  # Import CreateGestures class (webcam frame)
-from create_preset import CreatePreset  # Import CreatePreset class
+from create_preset import CreatePreset
 
 # Get the directory where this script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -90,24 +90,6 @@ def show_create_gestures():
     mainmenu.place_forget()
     gestures_frame.place_forget()
     global create_gestures_frame
-    
-def show_createpreset():
-    global create_preset_frame
-    mainmenu.place_forget()
-
-    if 'create_preset_frame' in globals() and create_preset_frame is not None:
-        create_preset_frame.destroy()
-
-    create_preset_frame = CreatePreset(
-        root,
-        gesture_csv_path="gestures.csv",  # Update this path if needed
-        save_dir="presets",               # Preset directory
-        back_callback=show_mainmenu,
-        width=1280,
-        height=720,
-        fg_color="transparent"
-    )
-    create_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
     # Destroy old gesture creation frame
     if 'create_gestures_frame' in globals() and create_gestures_frame is not None:
@@ -135,6 +117,23 @@ def show_createpreset():
     create_gestures_frame.place(relx=0.5, rely=0.5, anchor="center")
     create_gestures_frame.start_webcam()
 
+def show_createpreset():
+    global create_preset_frame
+    mainmenu.place_forget()
+
+    if 'create_preset_frame' in globals() and create_preset_frame is not None:
+        create_preset_frame.destroy()
+
+    create_preset_frame = CreatePreset(
+        root,
+        gesture_csv_path="gestures.csv",  # Update this path if needed
+        save_dir="presets",               # Preset directory
+        back_callback=show_mainmenu,
+        width=1280,
+        height=720,
+        fg_color="transparent"
+    )
+    create_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def update_current_preset(preset_name, preset_paths):
     global selected_preset, selected_preset_paths
@@ -273,6 +272,10 @@ change_preset_frame.place_forget()
 # Create Howtouse frame but hidden until accessed
 how_to_use_frame = HowtousePage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 how_to_use_frame.place_forget()
+
+btn_createpreset = ctk.CTkButton(mainmenu, text="Create Preset", font=button_font, width=button_width, height=button_height, command=show_createpreset)
+btn_createpreset.pack(pady=10)
+
 
 # Create Gestures frame but hidden until accessed
 gestures_frame = Gestures(
