@@ -106,7 +106,7 @@ class ChangePreset(ctk.CTkFrame):
         self.create_preset_frame = CreatePreset(
             master=self.master,
             gesture_csv_path=os.path.join(os.getcwd(), "keypoint_classifier_label.csv"),
-            save_preset_callback=self.update_preset_callback,
+            save_dir=os.path.join(os.getcwd(), "gui", "presets"),  # ✅ Correct argument for CreatePreset
             back_callback=self.close_and_return,
             width=1600,
             height=900,

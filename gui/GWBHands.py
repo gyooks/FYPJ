@@ -215,9 +215,9 @@ def retrain_model_from_notebook():
 
         # Inject dataset and label path definitions at the top of the notebook
         inject_code = f"""
-dataset = r\"\"\"{dataset_file}\"\"\"
-label = r\"\"\"{label_file}\"\"\"
-"""
+            dataset = r\"\"\"{dataset_file}\"\"\"
+        label = r\"\"\"{label_file}\"\"\"
+        """
         nb.cells.insert(0, nbformat.v4.new_code_cell(inject_code))
 
         # Execute notebook
@@ -225,7 +225,7 @@ label = r\"\"\"{label_file}\"\"\"
         ep.preprocess(nb, {'metadata': {'path': script_dir}})
 
         msgbox.showinfo("Success", "Model retrained successfully!")
-
+cff
     except Exception as e:
         msgbox.showerror("Retrain Failed", f"An error occurred:\n{str(e)}")
 
