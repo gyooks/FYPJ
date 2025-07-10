@@ -225,7 +225,6 @@ def retrain_model_from_notebook():
         ep.preprocess(nb, {'metadata': {'path': script_dir}})
 
         msgbox.showinfo("Success", "Model retrained successfully!")
-cff
     except Exception as e:
         msgbox.showerror("Retrain Failed", f"An error occurred:\n{str(e)}")
 
