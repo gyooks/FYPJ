@@ -68,10 +68,69 @@ class Gestures(ctk.CTkFrame):
         back_btn.pack(pady=10)
 
     def delete_gesture(self, gesture_name):
-        print(f"Deleting gesture: {gesture_name}")
-        if gesture_name in self.gesture:
-            self.gesture.remove(gesture_name)
-            self.refresh_gesture_list()
+        if gesture_name not in self.gesture:
+            return
+
+        confirm = messagebox.askyesno("Confirm Delete", f"Delete gesture '{gesture_name}'?")
+        if not confirm:
+            return
+
+        gesture_index = self.gesture.index(gesture_name)
+        self.gesture.remove(gesture_name)
+
+        try:
+            with open(self.selected_preset["label_csv_path"], "w", newline='', encoding='utf-8') as f:
+                writer = csv.writer(f)
+                for g in self.gesture:
+                    writer.writerow([g])
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update label CSV:\n{e}")
+            return
+
+        # ✅ Actually perform deletion from keypoint.csv
+        self.remove_rows_by_gesture_id(gesture_index)
+        self.refresh_gesture_list()
+
+
+    def remove_rows_by_gesture_id(self, gesture_index):
+        keypoint_csv_path = self.selected_preset.get("keypoint_csv_path")
+
+        if not keypoint_csv_path or not os.path.exists(keypoint_csv_path):
+            print("⚠️ keypoint.csv not found at:", keypoint_csv_path)
+            return
+
+        try:
+            with open(keypoint_csv_path, "r", encoding="utf-8") as f:
+                rows = list(csv.reader(f))
+
+            updated_rows = []
+            removed_count = 0
+            reindexed_count = 0
+
+            for row in rows:
+                if not row:
+                    continue
+                try:
+                    row_id = int(float(row[0]))  # handles both "2" and "2.0"
+                    if row_id == gesture_index:
+                        removed_count += 1
+                        continue  # Delete this row
+                    elif row_id > gesture_index:
+                        row[0] = str(row_id - 1)  # Decrement index
+                        reindexed_count += 1
+                except ValueError:
+                    print(f"⚠️ Could not parse row ID: {row[0]}")
+                updated_rows.append(row)
+
+            with open(keypoint_csv_path, "w", newline="", encoding="utf-8") as f:
+                writer = csv.writer(f)
+                writer.writerows(updated_rows)
+
+            print(f"🧹 Removed {removed_count} rows for gesture index {gesture_index}")
+            print(f"🔢 Reindexed {reindexed_count} rows after deletion")
+
+        except Exception as e:
+            messagebox.showerror("Error", f"Failed to update keypoint.csv:\n{e}")
 
     def edit_gesture(self, gesture_name):
         print(f"Renaming gesture: {gesture_name}")
