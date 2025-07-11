@@ -260,9 +260,6 @@ btn_settings.pack(pady=10)
 btn_exit = ctk.CTkButton(mainmenu, text="Exit", font=button_font, width=button_width, height=button_height, command=root.quit)
 btn_exit.pack(pady=10)
 
-btn_createpreset = ctk.CTkButton(mainmenu, text="Create Preset", font=button_font, width=button_width, height=button_height, command=show_createpreset)
-btn_createpreset.pack(pady=10)
-
 # Create settings frame but hidden until settings are accessed
 settings_frame = SettingsPage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 settings_frame.place_forget()
