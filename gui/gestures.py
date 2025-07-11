@@ -2,6 +2,8 @@ import customtkinter as ctk
 import tkinter.messagebox as messagebox
 import csv
 import os
+import tkinter.simpledialog as simpledialog
+
 
 class Gestures(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, selected_gesture=None, update_gesture_callback=None, create_gesture_callback=None, **kwargs):
@@ -133,8 +135,24 @@ class Gestures(ctk.CTkFrame):
             messagebox.showerror("Error", f"Failed to update keypoint.csv:\n{e}")
 
     def edit_gesture(self, gesture_name):
-        print(f"Renaming gesture: {gesture_name}")
-        # TODO: Add rename logic
+        def on_rename(old_name, new_name):
+            try:
+                index = self.gesture.index(old_name)
+                self.gesture[index] = new_name
+
+                label_csv_path = self.selected_preset["label_csv_path"]
+                with open(label_csv_path, "w", newline="", encoding='utf-8') as f:
+                    writer = csv.writer(f)
+                    for g in self.gesture:
+                        writer.writerow([g])
+
+                messagebox.showinfo("Success", f"Gesture '{old_name}' renamed to '{new_name}'.")
+                self.refresh_gesture_list()
+
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to rename gesture:\n{e}")
+
+        RenameGesturePopup(self, gesture_name, self.gesture, on_rename)
 
     def create_new_gesture(self):
         if not self.selected_preset:
@@ -152,3 +170,49 @@ class Gestures(ctk.CTkFrame):
             widget.destroy()
         self.gesture = self.load_gestures_from_csv()
         self.create_widgets()
+
+
+class RenameGesturePopup(ctk.CTkToplevel):
+    def __init__(self, parent, current_name, existing_names, on_rename_callback):
+        super().__init__(parent)
+        self.title("Rename Gesture")
+        self.geometry("400x200")
+        self.resizable(False, False)
+        self.grab_set()  # Make modal
+        self.focus()
+
+        self.current_name = current_name
+        self.existing_names = existing_names
+        self.on_rename_callback = on_rename_callback
+
+        self.label = ctk.CTkLabel(self, text=f"Rename '{current_name}' to:", font=("Segoe UI", 18))
+        self.label.pack(pady=20)
+
+        self.entry = ctk.CTkEntry(self, width=250)
+        self.entry.insert(0, current_name)
+        self.entry.pack(pady=10)
+        self.entry.focus()
+
+        self.button_frame = ctk.CTkFrame(self, fg_color="transparent")
+        self.button_frame.pack(pady=10)
+
+        self.cancel_btn = ctk.CTkButton(self.button_frame, text="Cancel", command=self.destroy, width=80)
+        self.cancel_btn.grid(row=0, column=0, padx=10)
+
+        self.confirm_btn = ctk.CTkButton(self.button_frame, text="Rename", command=self.rename, width=80)
+        self.confirm_btn.grid(row=0, column=1, padx=10)
+
+    def rename(self):
+        new_name = self.entry.get().strip()
+        if not new_name:
+            messagebox.showwarning("Invalid Name", "Name cannot be empty.")
+            return
+        if new_name == self.current_name:
+            self.destroy()
+            return
+        if new_name in self.existing_names:
+            messagebox.showwarning("Duplicate Name", f"The gesture name '{new_name}' already exists.")
+            return
+
+        self.on_rename_callback(self.current_name, new_name)
+        self.destroy()
