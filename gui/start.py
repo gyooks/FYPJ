@@ -7,10 +7,13 @@ import os
 import cv2 as cv
 import numpy as np
 import mediapipe as mp
-import pyautogui
+import keyboard
 import time
 import json
+import sys
+import subprocess
 
+from pynput.keyboard import Controller, Key
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
@@ -98,6 +101,11 @@ def main():
         key = cv.waitKey(10)
         if key == 27:
             break
+            
+        elif key == ord('b'):
+            subprocess.Popen([sys.executable, os.path.join(os.path.dirname(__file__), "GWBHands.py")])
+            break
+            
         number, mode = select_mode(key, mode)
 
         ret, image = cap.read()
@@ -137,7 +145,9 @@ def main():
                     key_to_press = gesture_to_key.get(gesture_name)
                     if key_to_press:
                         if gesture_name != last_gesture or (current_time - last_action_time) > cooldown_seconds:
-                            pyautogui.press(key_to_press)
+                            keyboard = Controller()
+                            keyboard.press(key_to_press)
+                            keyboard.release(key_to_press)
                             print(f"[ACTION] Gesture '{gesture_name}' → Key: '{key_to_press}'")
                             last_gesture = gesture_name
                             last_action_time = current_time

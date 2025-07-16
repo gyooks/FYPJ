@@ -102,13 +102,13 @@ def show_create_gestures():
         create_gestures_frame.stop_webcam()
         create_gestures_frame.place_forget()
         show_gestures()
-        if gestures_frame:  # ✅ Refresh gestures if it's loaded
+        if gestures_frame:  # Refresh gestures if it's loaded
             gestures_frame.refresh_gesture_list()
 
     # Create new gesture creation frame with selected preset
     create_gestures_frame = CreateGestures(
         root,
-        back_to_gestures_callback=on_back_from_create,  # ✅ Call our callback
+        back_to_gestures_callback=on_back_from_create,  # Call our callback
         selected_preset=selected_preset_paths,
         width=1280,
         height=720,
@@ -171,6 +171,7 @@ def start_gesture_app():
     if not os.path.exists(start_script_path):
         msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
         return
+    root.withdraw()  # Add this line to hide the GUI
 
     preset_info = selected_preset_paths
     subprocess.Popen([
@@ -203,7 +204,7 @@ def retrain_model_from_notebook():
 
     # Get preset file paths
     try:
-        label_file = selected_preset_paths["mapping_path"]
+        label_file = selected_preset_paths["label_csv_path"]
         dataset_file = selected_preset_paths["keypoint_csv_path"]
     except KeyError:
         msgbox.showerror("Preset Error", "Selected preset is missing key paths.")
@@ -215,7 +216,7 @@ def retrain_model_from_notebook():
 
         # Inject dataset and label path definitions at the top of the notebook
         inject_code = f"""
-            dataset = r\"\"\"{dataset_file}\"\"\"
+        dataset = r\"\"\"{dataset_file}\"\"\"
         label = r\"\"\"{label_file}\"\"\"
         """
         nb.cells.insert(0, nbformat.v4.new_code_cell(inject_code))
