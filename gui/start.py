@@ -95,6 +95,7 @@ def main():
     last_action_time = 0
     cooldown_seconds = 1
     last_gesture = None
+    held_key = None
 
     while True:
         fps = cvFpsCalc.get()
@@ -143,19 +144,32 @@ def main():
                 if 0 <= hand_sign_id < len(keypoint_classifier_labels):
                     gesture_name = keypoint_classifier_labels[hand_sign_id]
                     key_to_press = gesture_to_key.get(gesture_name)
-                    if key_to_press:
-                        if gesture_name != last_gesture or (current_time - last_action_time) > cooldown_seconds:
-                            keyboard = Controller()
+                    if gesture_name != last_gesture:
+                        # Gesture changed — release old key (if any)
+                        if held_key:
+                            keyboard.release(held_key)
+                            print(f"🛑 Released key: {held_key}")
+                            held_key = None
+
+                        # Press new key if it's mapped
+                        if key_to_press:
                             keyboard.press(key_to_press)
-                            keyboard.release(key_to_press)
-                            print(f"[ACTION] Gesture '{gesture_name}' → Key: '{key_to_press}'")
-                            last_gesture = gesture_name
-                            last_action_time = current_time
+                            held_key = key_to_press
+                            print(f"🟢 Holding key: {key_to_press}")
+
+                        last_gesture = gesture_name
 
                 debug_image = draw_bounding_rect(True, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
                 debug_image = draw_info_text(debug_image, brect, handedness, gesture_name, str(finger_gesture_id))
         else:
+            # Hand not detected — release any held keys
+            if held_key:
+                keyboard.release(held_key)
+                print(f"🛑 Released key (no hand): {held_key}")
+                held_key = None
+
+            last_gesture = None
             point_history.append([0, 0])
 
         debug_image = draw_point_history(debug_image, point_history)
