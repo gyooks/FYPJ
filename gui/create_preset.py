@@ -36,7 +36,7 @@ class CreatePreset(ctk.CTkFrame):
         button_frame.pack(pady=(20, 10))
 
         ctk.CTkButton(button_frame, text="Confirm", command=self.save_preset).pack(side="left", padx=10)
-        ctk.CTkButton(button_frame, text="Cancel", command=self.back_callback).pack(side="left", padx=10)
+        ctk.CTkButton(button_frame, text="Cancel", command=self.cancel_and_close).pack(side="left", padx=10)
 
     
     def load_gestures(self):
@@ -55,9 +55,6 @@ class CreatePreset(ctk.CTkFrame):
                                 if row:
                                     gestures.add(row[0].strip())
     
-        if not gestures:
-            messagebox.showwarning("No Gestures Found", "No gesture labels were found in any preset folders.")
-            return []
         return sorted(list(gestures))
 
     def create_widgets(self):
@@ -114,6 +111,10 @@ class CreatePreset(ctk.CTkFrame):
         mapping_text = "\n".join([f"{gesture}: {key}" for gesture, key in self.gesture_key_mapping.items()])
         self.mapping_display.configure(text=mapping_text)
 
+    def cancel_and_close(self):
+        self.place_forget()
+        self.back_callback()
+
     def save_preset(self):
         
         name = self.preset_name.get().strip()
@@ -160,7 +161,7 @@ class CreatePreset(ctk.CTkFrame):
                 messagebox.showwarning("Warning", "Default preset folder not found. Base files not copied.")
 
             # Save JSON file with gesture-key mapping
-            with open(os.path.join(preset_folder, f"{name}.json"), "w", encoding="utf-8") as jsonfile:
+            with open(os.path.join(preset_folder, f"mapping.json"), "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)
 
             # Save gesture labels
@@ -170,7 +171,7 @@ class CreatePreset(ctk.CTkFrame):
                     writer.writerow([label])
 
             # Save dummy keypoints CSV (all-zero rows for each gesture)
-            with open(os.path.join(preset_folder, "keypoint_classifier.csv"), "w", newline='', encoding='utf-8') as classifierfile:
+            with open(os.path.join(preset_folder, "keypoint.csv"), "w", newline='', encoding='utf-8') as classifierfile:
                 writer = csv.writer(classifierfile)
                 for _ in gesture_labels:
                     writer.writerow([0] * 21)  # Replace 21 with actual number of keypoints if known

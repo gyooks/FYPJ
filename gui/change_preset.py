@@ -107,7 +107,7 @@ class ChangePreset(ctk.CTkFrame):
             master=self.master,
             gesture_csv_path=os.path.join(os.getcwd(), "keypoint_classifier_label.csv"),
             save_dir=os.path.join(os.getcwd(), "gui", "presets"),  # ✅ Correct argument for CreatePreset
-            back_callback=self.close_and_return,
+            back_callback=self.return_from_create,
             width=1600,
             height=900,
             fg_color="transparent"
@@ -131,3 +131,8 @@ class ChangePreset(ctk.CTkFrame):
         for widget in self.winfo_children():
             widget.destroy()
         self.create_widgets()
+
+    def return_from_create(self):
+        if hasattr(self, "create_preset_frame"):
+            self.create_preset_frame.place_forget()
+        self.place(relx=0.5, rely=0.5, anchor="center")
