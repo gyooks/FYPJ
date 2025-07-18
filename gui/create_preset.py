@@ -3,6 +3,8 @@ import os
 import csv
 import json
 import tkinter.messagebox as messagebox
+import shutil
+
 font_family = "Segoe UI"
 class CreatePreset(ctk.CTkFrame):
     def __init__(self, master, gesture_csv_path, save_dir, back_callback, **kwargs):
@@ -113,6 +115,7 @@ class CreatePreset(ctk.CTkFrame):
         self.mapping_display.configure(text=mapping_text)
 
     def save_preset(self):
+        
         name = self.preset_name.get().strip()
         if not name:
             messagebox.showerror("Error", "Preset name cannot be empty.")
@@ -140,9 +143,22 @@ class CreatePreset(ctk.CTkFrame):
             messagebox.showerror("Error", f"A preset named '{name}' already exists.")
             return
 
-        os.makedirs(preset_folder)
-
         try:
+            os.makedirs(preset_folder)
+
+            # ✅ Copy all contents from Default preset into new preset folder
+            default_preset_path = os.path.join(self.save_dir, "Default")
+            if os.path.exists(default_preset_path):
+                for item in os.listdir(default_preset_path):
+                    s = os.path.join(default_preset_path, item)
+                    d = os.path.join(preset_folder, item)
+                    if os.path.isdir(s):
+                        shutil.copytree(s, d)
+                    else:
+                        shutil.copy2(s, d)
+            else:
+                messagebox.showwarning("Warning", "Default preset folder not found. Base files not copied.")
+
             # Save JSON file with gesture-key mapping
             with open(os.path.join(preset_folder, f"{name}.json"), "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)
