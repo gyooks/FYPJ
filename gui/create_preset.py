@@ -120,58 +120,58 @@ class CreatePreset(ctk.CTkFrame):
         if not name:
             messagebox.showerror("Error", "Preset name cannot be empty.")
             return
-    
+
         gesture_to_key = {}
-    
+
         for gesture_var, key_var in self.mapping_rows:
             gesture = gesture_var.get().strip()
             key = key_var.get().strip()
             if not gesture or not key:
                 continue
             gesture_to_key[gesture] = key
-    
+
         if not gesture_to_key:
             messagebox.showerror("Error", "No valid gesture mappings.")
             return
-    
+
         # Create new preset folder
         preset_folder = os.path.join(self.save_dir, name)
         if os.path.exists(preset_folder):
             messagebox.showerror("Error", f"A preset named '{name}' already exists.")
             return
-    
+
         os.makedirs(preset_folder)
-    
+
         try:
             # ✅ Use relative path to Default folder inside self.save_dir
             default_folder = os.path.join(self.save_dir, "Default")
-    
+
             required_files = [
                 "keypoint_classifier_label.csv",
-                "keypoint_classifier.csv",
+                "keypoint.csv",
                 "mapping.json",  # this will be overwritten below
                 "point_history.csv",
                 "point_history_classifier_label.csv"
             ]
-    
+
             # ✅ Copy files from Default to new preset
             for filename in required_files:
                 src = os.path.join(default_folder, filename)
                 dst = os.path.join(preset_folder, filename)
-    
+
                 if not os.path.exists(src):
                     messagebox.showerror("Error", f"Missing default file: {filename}")
                     return
-    
+
                 shutil.copy2(src, dst)
-    
+
             # ✅ Overwrite mapping.json with user-defined gesture→key mapping
             mapping_path = os.path.join(preset_folder, "mapping.json")
             with open(mapping_path, "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)
-    
+
             messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
             self.back_callback()
-    
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
