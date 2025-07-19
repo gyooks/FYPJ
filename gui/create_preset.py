@@ -143,7 +143,7 @@ class CreatePreset(ctk.CTkFrame):
         os.makedirs(preset_folder)
 
         try:
-            # Copy all default files to new preset folder
+            # Copy all default files to new preset folder 
             default_folder = os.path.join(os.path.dirname(self.save_dir), "Default")
             required_files = [
                 "keypoint_classifier_label.csv",
