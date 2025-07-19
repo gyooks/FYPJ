@@ -116,68 +116,54 @@ class CreatePreset(ctk.CTkFrame):
         self.back_callback()
 
     def save_preset(self):
-        
         name = self.preset_name.get().strip()
         if not name:
             messagebox.showerror("Error", "Preset name cannot be empty.")
             return
-
+    
         gesture_to_key = {}
-        gesture_labels = []
-
+    
         for gesture_var, key_var in self.mapping_rows:
             gesture = gesture_var.get().strip()
             key = key_var.get().strip()
             if not gesture or not key:
                 continue
             gesture_to_key[gesture] = key
-            if gesture not in gesture_labels:
-                gesture_labels.append(gesture)
-
+    
         if not gesture_to_key:
             messagebox.showerror("Error", "No valid gesture mappings.")
             return
-
-        # Create a dedicated folder for the preset
+    
+        # Create preset folder
         preset_folder = os.path.join(self.save_dir, name)
         if os.path.exists(preset_folder):
             messagebox.showerror("Error", f"A preset named '{name}' already exists.")
             return
-
+    
+        os.makedirs(preset_folder)
+    
         try:
-            os.makedirs(preset_folder)
-
-            # ✅ Copy all contents from Default preset into new preset folder
-            default_preset_path = os.path.join(self.save_dir, "Default")
-            if os.path.exists(default_preset_path):
-                for item in os.listdir(default_preset_path):
-                    s = os.path.join(default_preset_path, item)
-                    d = os.path.join(preset_folder, item)
-                    if os.path.isdir(s):
-                        shutil.copytree(s, d)
-                    else:
-                        shutil.copy2(s, d)
-            else:
-                messagebox.showwarning("Warning", "Default preset folder not found. Base files not copied.")
-
-            # Save JSON file with gesture-key mapping
-            with open(os.path.join(preset_folder, f"mapping.json"), "w", encoding="utf-8") as jsonfile:
+            # Copy all default files to new preset folder
+            default_folder = os.path.join(self.save_dir, "Default")
+            required_files = [
+                "keypoint_classifier_label.csv",
+                "keypoint_classifier.csv",
+                "mapping.json",  # will be overwritten next
+                "point_history.csv",
+                "point_history_classifier_label.csv"
+            ]
+    
+            for filename in required_files:
+                src = os.path.join(default_folder, filename)
+                dst = os.path.join(preset_folder, filename)
+                shutil.copy2(src, dst)
+    
+            # Overwrite mapping.json with new user-defined mapping
+            with open(os.path.join(preset_folder, "mapping.json"), "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)
-
-            # Save gesture labels
-            with open(os.path.join(preset_folder, "keypoint_classifier_label.csv"), "w", newline='', encoding='utf-8') as labelfile:
-                writer = csv.writer(labelfile)
-                for label in gesture_labels:
-                    writer.writerow([label])
-
-            # Save dummy keypoints CSV (all-zero rows for each gesture)
-            with open(os.path.join(preset_folder, "keypoint.csv"), "w", newline='', encoding='utf-8') as classifierfile:
-                writer = csv.writer(classifierfile)
-                for _ in gesture_labels:
-                    writer.writerow([0] * 21)  # Replace 21 with actual number of keypoints if known
-
+    
             messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
             self.back_callback()
-
+    
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
