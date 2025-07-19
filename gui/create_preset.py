@@ -120,31 +120,31 @@ class CreatePreset(ctk.CTkFrame):
         if not name:
             messagebox.showerror("Error", "Preset name cannot be empty.")
             return
-    
+
         gesture_to_key = {}
-    
+
         for gesture_var, key_var in self.mapping_rows:
             gesture = gesture_var.get().strip()
             key = key_var.get().strip()
             if not gesture or not key:
                 continue
             gesture_to_key[gesture] = key
-    
+
         if not gesture_to_key:
             messagebox.showerror("Error", "No valid gesture mappings.")
             return
-    
+
         # Create preset folder
         preset_folder = os.path.join(self.save_dir, name)
         if os.path.exists(preset_folder):
             messagebox.showerror("Error", f"A preset named '{name}' already exists.")
             return
-    
+
         os.makedirs(preset_folder)
-    
+
         try:
             # Copy all default files to new preset folder
-            default_folder = os.path.join(self.save_dir, "Default")
+            default_folder = os.path.join(os.path.dirname(self.save_dir), "Default")
             required_files = [
                 "keypoint_classifier_label.csv",
                 "keypoint_classifier.csv",
@@ -152,18 +152,18 @@ class CreatePreset(ctk.CTkFrame):
                 "point_history.csv",
                 "point_history_classifier_label.csv"
             ]
-    
+
             for filename in required_files:
                 src = os.path.join(default_folder, filename)
                 dst = os.path.join(preset_folder, filename)
                 shutil.copy2(src, dst)
-    
+
             # Overwrite mapping.json with new user-defined mapping
             with open(os.path.join(preset_folder, "mapping.json"), "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)
-    
+
             messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
             self.back_callback()
-    
+
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
