@@ -7,7 +7,7 @@ import shutil
 
 font_family = "Segoe UI"
 class CreatePreset(ctk.CTkFrame):
-    def __init__(self, master, gesture_csv_path, save_dir, back_callback,update_presets_callback **kwargs):
+    def __init__(self, master, gesture_csv_path, save_dir, back_callback,update_presets_callback, **kwargs):
         super().__init__(master, **kwargs)
         self.gesture_csv_path = gesture_csv_path
         self.save_dir = save_dir
