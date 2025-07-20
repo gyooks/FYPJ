@@ -7,10 +7,11 @@ import shutil
 
 font_family = "Segoe UI"
 class CreatePreset(ctk.CTkFrame):
-    def __init__(self, master, gesture_csv_path, save_dir, back_callback, **kwargs):
+    def __init__(self, master, gesture_csv_path, save_dir, back_callback,update_presets_callback **kwargs):
         super().__init__(master, **kwargs)
         self.gesture_csv_path = gesture_csv_path
         self.save_dir = save_dir
+        self.update_presets_callback = update_presets_callback
         self.back_callback = back_callback
         self.mapping_rows = []
         self.gesture_options = self.load_gestures()
@@ -143,13 +144,13 @@ class CreatePreset(ctk.CTkFrame):
         os.makedirs(preset_folder)
 
         try:
-            # ✅ Use relative path to Default folder inside self.save_dir
+            
             default_folder = os.path.join(self.save_dir, "Default")
 
             required_files = [
                 "keypoint_classifier_label.csv",
                 "keypoint.csv",
-                "mapping.json",  # this will be overwritten below
+                "mapping.json",  
                 "point_history.csv",
                 "point_history_classifier_label.csv"
             ]
@@ -171,7 +172,9 @@ class CreatePreset(ctk.CTkFrame):
                 json.dump(gesture_to_key, jsonfile, indent=4)
 
             messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
-            self.back_callback()
-
+            
+            if self.refresh_callback:
+                self.refresh_callback()
+                
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
