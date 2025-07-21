@@ -173,8 +173,9 @@ class CreatePreset(ctk.CTkFrame):
 
             messagebox.showinfo("Success", f"Preset '{name}' created successfully.")
             
-            if self.refresh_callback:
-                self.refresh_callback()
+            if self.update_presets_callback:
+                self.update_presets_callback()
+            self.back_callback()
                 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to create preset: {str(e)}")
