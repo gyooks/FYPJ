@@ -17,6 +17,7 @@ from pynput.keyboard import Controller, Key
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
+from hand_cursor import HandCursor
 
 
 def get_args():
@@ -97,7 +98,11 @@ def main():
     last_gesture = None
     held_key = None
 
+    cursor_tracker = HandCursor(draw_cursor=False)
+    cursor_tracker.start()
+
     while True:
+        hand_x, hand_y = cursor_tracker.get_cursor_position()
         fps = cvFpsCalc.get()
         key = cv.waitKey(10)
         if key == 27:
@@ -177,6 +182,7 @@ def main():
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
+    cursor_tracker.stop()
     cv.destroyAllWindows()
 
 

@@ -12,6 +12,7 @@ from how_to_use import HowtousePage  # Import HowtousePage class
 from gestures import Gestures  # Import Gestures class
 from create_gestures import CreateGestures  # Import CreateGestures class (webcam frame)
 from create_preset import CreatePreset
+from hand_cursor import HandCursor
 
 # Get the directory where this script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -31,6 +32,9 @@ root.geometry("1280x720")
 current_preset = ctk.StringVar(value="Preset Used: None")
 selected_preset = None
 selected_preset_paths = None
+cursor_mode = False
+cursor_tracker = HandCursor(draw_cursor=True)
+
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
 mainmenu.place(relx=0.5, rely=0.5, anchor="center")
@@ -152,6 +156,18 @@ change_preset_frame = ChangePreset(
     fg_color="transparent"
 )
 
+
+def toggle_cursor_mode():
+    global cursor_mode
+    if not cursor_mode:
+        cursor_tracker.start()
+        msgbox.showinfo("Cursor Mode", "🟢 Hand Cursor Activated")
+        cursor_mode = True
+    else:
+        cursor_tracker.stop()
+        msgbox.showinfo("Cursor Mode", "🛑 Hand Cursor Deactivated")
+        cursor_mode = False
+
 # Function for start button
 def start_gesture_app():
     if not selected_preset:
@@ -257,6 +273,9 @@ btn_tutorial.pack(pady=10)
 
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
 btn_settings.pack(pady=10)
+
+btn_cursor_mode = ctk.CTkButton(mainmenu, text="Toggle Cursor Mode", font=button_font, width=button_width, height=button_height, command=toggle_cursor_mode)
+btn_cursor_mode.pack(pady=10)
 
 btn_exit = ctk.CTkButton(mainmenu, text="Exit", font=button_font, width=button_width, height=button_height, command=root.quit)
 btn_exit.pack(pady=10)
