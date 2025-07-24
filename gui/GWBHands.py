@@ -292,7 +292,7 @@ change_preset_frame.place_forget()
 how_to_use_frame = HowtousePage(root, back_to_main_callback=show_mainmenu, width=1600, height=900, fg_color="transparent")
 how_to_use_frame.place_forget()
 
-create_preset_frame = CreatePreset(root, gesture_csv_path="gestures.csv", save_dir="presets", back_callback=show_mainmenu, width=1280, height=720, fg_color="transparent")
+create_preset_frame = CreatePreset(root, gesture_csv_path="gestures.csv", save_dir="presets", back_callback=show_mainmenu, update_presets_callback=change_preset_frame.load_presets, width=1280, height=720, fg_color="transparent")
 create_preset_frame.place_forget()
 
 
