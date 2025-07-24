@@ -92,14 +92,35 @@ class ChangePreset(ctk.CTkFrame):
             self.presets.remove(preset_name)
             self.refresh_preset_list()
 
-    def edit_preset_window(self, preset_name):
-        self.place_forget()
-        self.edit_preset_frame.preset_name = preset_name
-        self.edit_preset_frame.name_entry.delete(0, "end")
-        self.edit_preset_frame.name_entry.insert(0, preset_name)
-        self.edit_preset_frame.title.configure(text=f"Editing: {preset_name}")
-        self.edit_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
-
+    def edit_preset_window(self, preset):
+        
+        self.pack_forget()
+    
+        # Destroy previous EditPreset frame if it exists
+        if hasattr(self, "edit_preset_frame") and self.edit_preset_frame is not None:
+            self.edit_preset_frame.destroy()
+    
+        # Define callback to go back
+        def back_to_change_preset():
+            self.edit_preset_frame.pack_forget()
+            self.edit_preset_frame.destroy()
+            self.edit_preset_frame = None
+            self.pack()
+    
+        # Instantiate new EditPreset frame
+        self.edit_preset_frame = EditPreset(
+            master=self.master,
+            preset_name=preset,
+            preset_dir=os.path.join(os.getcwd(), "gui", "presets"),
+            back_callback=back_to_change_preset,
+            update_callback=self.refresh_preset_list,
+            width=1280,
+            height=720,
+            fg_color="transparent"
+        )
+    
+        self.edit_preset_frame.pack(fill="both", expand=True)
+    
     def create_new_preset(self):
         print("Creating new preset...")
         self.place_forget()
