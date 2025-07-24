@@ -32,15 +32,15 @@ class ChangePreset(ctk.CTkFrame):
         self.presets = list(self.presets_dict.keys())
 
         self.edit_preset_frame = EditPreset(
-            master,
+            master=master,
             preset_name="",
+            preset_dir=os.path.join(os.getcwd(), "gui", "presets"),
             back_callback=self.back_from_edit,
-            save_changes=self.update_preset_callback,
+            update_callback=self.update_preset_callback,
             width=1600,
             height=900,
             fg_color="transparent"
-        )
-        self.edit_preset_frame.place_forget()
+        )   
 
         self.create_widgets()
 
