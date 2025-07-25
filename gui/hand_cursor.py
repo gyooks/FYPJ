@@ -61,3 +61,6 @@ class HandCursor:
 
         self.cap.release()
         cv2.destroyAllWindows()
+
+    def get_cursor_position(self):
+        return pyautogui.position()

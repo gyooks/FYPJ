@@ -226,27 +226,34 @@ def retrain_model_from_notebook():
         msgbox.showerror("Preset Error", "Selected preset is missing key paths.")
         return
 
+    # ✅ Show loading indicator
+    loading_label.configure(text="🔄 Training model... Please wait.")
+    mainmenu.update()
+
     try:
-        with open(notebook_path, encoding='utf-8') as f:
+        with open(notebook_path) as f:
             nb = nbformat.read(f, as_version=4)
+            nb.cells.insert(0, nbformat.v4.new_code_cell(f"label_file = r'''{label_file}'''"))
+            nb.cells.insert(1, nbformat.v4.new_code_cell("print('label_file =', label_file)"))
+            nb.cells.insert(2, nbformat.v4.new_code_cell(f"dataset = r'''{dataset_file}'''"))
+            nb.cells.insert(3, nbformat.v4.new_code_cell("print('dataset =', dataset)"))
 
-        # Inject dataset and label path definitions at the top of the notebook
-        inject_code = f"""
-        dataset = r\"\"\"{dataset_file}\"\"\"
-        label = r\"\"\"{label_file}\"\"\"
-        """
-        nb.cells.insert(0, nbformat.v4.new_code_cell(inject_code))
-
-        # Execute notebook
         ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
+
+        # Optional: pass environment variables
+        os.environ["LABEL_CSV"] = label_file
+        os.environ["KEYPOINT_CSV"] = dataset_file
+
         ep.preprocess(nb, {'metadata': {'path': script_dir}})
+        msgbox.showinfo("Success", "Model trained successfully.")
 
-        msgbox.showinfo("Success", "Model retrained successfully!")
     except Exception as e:
-        msgbox.showerror("Retrain Failed", f"An error occurred:\n{str(e)}")
+        msgbox.showerror("Error", f"An error occurred:\n{str(e)}")
 
-
-
+    finally:
+        # ✅ Hide loading indicator
+        loading_label.configure(text="")
+        mainmenu.update()
 
 # Buttons
 button_font = ("Segoe UI", 16)
@@ -267,6 +274,9 @@ btn_gestures.pack(pady=10)
 
 btn_retrain = ctk.CTkButton(mainmenu,text="Retrain Model",font=button_font,width=button_width,height=button_height,command=retrain_model_from_notebook)
 btn_retrain.pack(pady=10)
+
+loading_label = ctk.CTkLabel(mainmenu, text="")
+loading_label.pack(pady=5)
 
 btn_tutorial = ctk.CTkButton(mainmenu, text="How To Use", font=button_font, width=button_width, height=button_height, command=show_howtouse)
 btn_tutorial.pack(pady=10)
