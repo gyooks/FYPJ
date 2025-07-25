@@ -12,6 +12,7 @@ import time
 import json
 import sys
 import subprocess
+import pyautogui
 
 from pynput.keyboard import Controller, Key
 from utils import CvFpsCalc
@@ -98,11 +99,9 @@ def main():
     last_gesture = None
     held_key = None
 
-    cursor_tracker = HandCursor(draw_cursor=False)
-    cursor_tracker.start()
+    screen_width, screen_height = pyautogui.size()
 
     while True:
-        hand_x, hand_y = cursor_tracker.get_cursor_position()
         fps = cvFpsCalc.get()
         key = cv.waitKey(10)
         if key == 27:
@@ -129,6 +128,12 @@ def main():
                 brect = calc_bounding_rect(debug_image, hand_landmarks)
                 landmark_list = calc_landmark_list(debug_image, hand_landmarks)
 
+                 # === Cursor control ===
+                index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                cursor_x = int(index_finger_tip.x * screen_width)
+                cursor_y = int(index_finger_tip.y * screen_height)
+                pyautogui.moveTo(cursor_x, cursor_y)
+
                 pre_landmarks = pre_process_landmark(landmark_list)
                 pre_point_history = pre_process_point_history(debug_image, point_history)
                 logging_csv(number, mode, pre_landmarks, pre_point_history, preset_paths)
@@ -144,6 +149,7 @@ def main():
                 if len(pre_point_history) == history_length * 2:
                     finger_gesture_id = point_history_classifier(pre_point_history)
                 finger_gesture_history.append(finger_gesture_id)
+                
 
                 current_time = time.time()
                 if 0 <= hand_sign_id < len(keypoint_classifier_labels):
@@ -182,7 +188,6 @@ def main():
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
-    cursor_tracker.stop()
     cv.destroyAllWindows()
 
 
