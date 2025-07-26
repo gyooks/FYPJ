@@ -17,14 +17,15 @@ class CreateGestures(ctk.CTkFrame):
         self.WIDTH = 640
         self.HEIGHT = 480
 
-        self.captured_keypoints = []  # Stores captured gesture samples
-        self.current_label_index = None  # Stores label index of the current gesture
+        self.captured_keypoints = []
+        self.current_label_index = None
+        self.auto_capture_count = 0
+        self.auto_capture_target = 50
+        self.is_auto_capturing = False
 
-        # Get CSV path from preset (fallback if missing)
         self.csv_path = self.selected_preset.get("label_csv_path", "keypoint_classifier_label.csv")
         self.current_gesture_name = None
 
-        # Initialize MediaPipe Hands
         self.mp_hands = mp.solutions.hands
         self.hands = self.mp_hands.Hands(
             static_image_mode=False,
@@ -46,6 +47,9 @@ class CreateGestures(ctk.CTkFrame):
 
         self.video_label = ctk.CTkLabel(self, width=self.WIDTH, height=self.HEIGHT, text="")
         self.video_label.pack(pady=10)
+
+        self.sample_counter = ctk.CTkLabel(self, text="Samples: 0 / 50", font=(font_ui, 16))
+        self.sample_counter.pack(pady=5)
 
         btn_frame = ctk.CTkFrame(self, fg_color="transparent")
         btn_frame.pack(pady=20)
@@ -79,7 +83,7 @@ class CreateGestures(ctk.CTkFrame):
             self.current_gesture_name = gesture_name.strip()
             print(f"🟢 Recording started for gesture: {self.current_gesture_name}")
             self.capture_btn.configure(state="normal")
-            self.save_btn.configure(state="normal")
+            self.save_btn.configure(state="disabled")
         else:
             self.current_gesture_name = None
             print("⚠️ Gesture name input canceled.")
@@ -89,9 +93,25 @@ class CreateGestures(ctk.CTkFrame):
             print("❌ You must start recording with a name before capturing.")
             return
 
+        if self.is_auto_capturing:
+            return
+
+        self.auto_capture_count = 0
+        self.captured_keypoints.clear()
+        self.is_auto_capturing = True
+        self.capture_btn.configure(state="disabled")
+        self.save_btn.configure(state="disabled")
+        print(f"🔄 Starting automatic capture of {self.auto_capture_target} samples...")
+        self.auto_capture_loop()
+
+    def auto_capture_loop(self):
+        if not self.is_running or not self.cap or not self.is_auto_capturing:
+            return
+
         ret, frame = self.cap.read()
         if not ret:
             print("❌ Failed to capture frame.")
+            self.is_auto_capturing = False
             return
 
         frame = cv2.flip(frame, 1)
@@ -100,18 +120,22 @@ class CreateGestures(ctk.CTkFrame):
 
         if results.multi_hand_landmarks:
             for hand_landmarks in results.multi_hand_landmarks:
-                # Get raw 2D landmarks
                 h, w, _ = frame.shape
-                landmark_list = []
-                for lm in hand_landmarks.landmark:
-                    landmark_list.append([int(lm.x * w), int(lm.y * h)])
-
-                # Preprocess like in start.py
+                landmark_list = [[int(lm.x * w), int(lm.y * h)] for lm in hand_landmarks.landmark]
                 processed = self.pre_process_landmark(landmark_list)
                 self.captured_keypoints.append(processed)
-                print(f"✅ Captured {len(self.captured_keypoints)} samples.")
-        else:
-            print("⚠️ No hands detected.")
+                self.auto_capture_count += 1
+                self.sample_counter.configure(text=f"Samples: {self.auto_capture_count} / {self.auto_capture_target}")
+                print(f"✅ Captured sample {self.auto_capture_count}/{self.auto_capture_target}")
+                break
+
+        if self.auto_capture_count >= self.auto_capture_target:
+            print("🛑 Automatic capture complete.")
+            self.is_auto_capturing = False
+            self.save_gesture()
+            return
+
+        self.after(100, self.auto_capture_loop)
 
     def save_gesture(self):
         if not self.current_gesture_name:
@@ -119,7 +143,6 @@ class CreateGestures(ctk.CTkFrame):
             return
 
         try:
-            # Save label to label CSV
             os.makedirs(os.path.dirname(self.csv_path), exist_ok=True)
             needs_newline = False
             if os.path.exists(self.csv_path):
@@ -134,20 +157,16 @@ class CreateGestures(ctk.CTkFrame):
                     f.write('\n')
                 f.write(self.current_gesture_name + '\n')
 
-            # Get the index of the gesture (line number in label CSV minus 1)
             with open(self.csv_path, encoding='utf-8') as f:
                 gesture_index = sum(1 for _ in f) - 1
 
-            # Ensure keypoint.csv ends with newline before appending
             keypoint_csv_path = self.selected_preset.get("keypoint_csv_path", "keypoint.csv")
             if os.path.exists(keypoint_csv_path):
                 with open(keypoint_csv_path, 'rb+') as f:
                     f.seek(-1, os.SEEK_END)
-                    last_char = f.read(1)
-                    if last_char != b'\n':
+                    if f.read(1) != b'\n':
                         f.write(b'\n')
 
-            # Append captured keypoints with gesture index
             with open(keypoint_csv_path, 'a', newline='') as f:
                 writer = csv.writer(f)
                 for kp in self.captured_keypoints:
@@ -158,9 +177,7 @@ class CreateGestures(ctk.CTkFrame):
             self.current_gesture_name = None
             self.captured_keypoints.clear()
             self.current_label_index = None
-
-            self.capture_btn.configure(state="disabled")
-            self.save_btn.configure(state="disabled")
+            self.sample_counter.configure(text="Samples: 0 / 50")
 
         except Exception as e:
             print(f"❌ Error saving gesture: {e}")
@@ -209,16 +226,11 @@ class CreateGestures(ctk.CTkFrame):
     def pre_process_landmark(self, landmark_list):
         base_x, base_y = landmark_list[0]
         relative_landmarks = [[x - base_x, y - base_y] for x, y in landmark_list]
-
-        # Flatten
         flattened = sum(relative_landmarks, [])
-
-        # Normalize
         max_value = max(abs(val) for val in flattened)
         if max_value == 0:
             max_value = 1
         normalized = [val / max_value for val in flattened]
-
         return normalized
 
     def show_success_prompt(self, message):
