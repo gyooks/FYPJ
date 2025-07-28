@@ -111,6 +111,7 @@ class ChangePreset(ctk.CTkFrame):
             width=1600,
             height=900,
             fg_color="transparent"
+            
         )
         self.create_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
         
