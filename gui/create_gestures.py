@@ -62,6 +62,7 @@ class CreateGestures(ctk.CTkFrame):
 
         self.save_btn = ctk.CTkButton(btn_frame, text="Stop to Save", font=button_font, command=self.save_gesture, state="disabled")
         self.save_btn.grid(row=0, column=2, padx=10)
+        self.save_btn.grid_remove()  # Hidden but functional
 
         back_btn = ctk.CTkButton(btn_frame, text="Back", font=button_font, command=self.go_back)
         back_btn.grid(row=0, column=3, padx=10)
@@ -92,10 +93,30 @@ class CreateGestures(ctk.CTkFrame):
         if not self.current_gesture_name:
             print("❌ You must start recording with a name before capturing.")
             return
-
         if self.is_auto_capturing:
             return
+        self.show_instruction_prompt()
 
+    def show_instruction_prompt(self):
+        popup = ctk.CTkToplevel(self)
+        popup.title("Instructions")
+        popup.geometry("360x160")
+        popup.grab_set()
+
+        label = ctk.CTkLabel(popup, text="Move your hand around so the system\ncan capture different positions.", font=("Segoe UI", 14), justify="center")
+        label.pack(pady=20)
+
+        ok_button = ctk.CTkButton(popup, text="OK", command=lambda: self.start_capture_with_delay(popup))
+        ok_button.pack(pady=10)
+
+    def start_capture_with_delay(self, popup):
+        popup.destroy()
+        self.sample_counter.configure(text="Starting in 3...")
+        self.after(1000, lambda: self.sample_counter.configure(text="Starting in 2..."))
+        self.after(2000, lambda: self.sample_counter.configure(text="Starting in 1..."))
+        self.after(3000, self.begin_auto_capture)
+
+    def begin_auto_capture(self):
         self.auto_capture_count = 0
         self.captured_keypoints.clear()
         self.is_auto_capturing = True
@@ -148,8 +169,7 @@ class CreateGestures(ctk.CTkFrame):
             if os.path.exists(self.csv_path):
                 with open(self.csv_path, 'rb') as f:
                     f.seek(-1, os.SEEK_END)
-                    last_char = f.read(1)
-                    if last_char != b'\n':
+                    if f.read(1) != b'\n':
                         needs_newline = True
 
             with open(self.csv_path, mode='a', encoding='utf-8') as f:
@@ -262,5 +282,3 @@ if __name__ == "__main__":
 
     frame = CreateGestures(root, back_to_gestures_callback=dummy_back, selected_preset={"label_csv_path": "keypoint_classifier_label.csv"})
     frame.pack(expand=True, fill="both")
-
-    root.mainloop()
