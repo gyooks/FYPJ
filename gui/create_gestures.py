@@ -60,6 +60,9 @@ class CreateGestures(ctk.CTkFrame):
         self.capture_btn = ctk.CTkButton(btn_frame, text="Capture", font=button_font, command=self.capture, state="disabled")
         self.capture_btn.grid(row=0, column=1, padx=10)
 
+        self.save_btn = ctk.CTkButton(btn_frame, text="Stop to Save", font=button_font, command=self.save_gesture, state="disabled")
+        self.save_btn.grid(row=0, column=2, padx=10)
+
         back_btn = ctk.CTkButton(btn_frame, text="Back", font=button_font, command=self.go_back)
         back_btn.grid(row=0, column=3, padx=10)
 
