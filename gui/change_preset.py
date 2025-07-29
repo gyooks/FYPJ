@@ -127,12 +127,12 @@ class ChangePreset(ctk.CTkFrame):
         self.create_preset_frame = CreatePreset(
             master=self.master,
             gesture_csv_path=os.path.join(os.getcwd(), "keypoint_classifier_label.csv"),
-            save_dir=os.path.join(os.getcwd(), "gui", "presets"),  # ✅ Correct argument for CreatePreset
+            save_dir=os.path.join(os.getcwd(), "gui", "presets"),
             back_callback=self.return_from_create,
+            update_presets_callback=self.refresh_preset_list,
             width=1600,
             height=900,
             fg_color="transparent"
-            
         )
         self.create_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
         
@@ -150,6 +150,25 @@ class ChangePreset(ctk.CTkFrame):
         self.place_forget()
 
     def refresh_preset_list(self):
+    
+        preset_base_dir = os.path.join(os.getcwd(), "gui", "presets")
+        self.presets_dict = {}
+    
+        if os.path.exists(preset_base_dir):
+            for folder_name in os.listdir(preset_base_dir):
+                folder_path = os.path.join(preset_base_dir, folder_name)
+                if os.path.isdir(folder_path):
+                    mapping_file = os.path.join(folder_path, "mapping.json")
+                    if os.path.exists(mapping_file):
+                        try:
+                            with open(mapping_file, "r") as f:
+                                self.presets_dict[folder_name] = json.load(f)
+                        except json.JSONDecodeError:
+                            print(f"⚠️ Invalid JSON in: {mapping_file}")
+    
+        self.presets = list(self.presets_dict.keys())
+    
+        # 🧹 Clear and recreate widgets
         for widget in self.winfo_children():
             widget.destroy()
         self.create_widgets()
