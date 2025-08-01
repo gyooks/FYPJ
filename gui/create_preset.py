@@ -42,22 +42,18 @@ class CreatePreset(ctk.CTkFrame):
     
     def load_gestures(self):
         gestures = set()
-        presets_path = self.save_dir
+        default_folder = os.path.join(self.save_dir, "Default")
+        label_csv = os.path.join(default_folder, "keypoint_classifier_label.csv")
     
-        if os.path.exists(presets_path):
-            for folder_name in os.listdir(presets_path):
-                folder_path = os.path.join(presets_path, folder_name)
-                if os.path.isdir(folder_path):
-                    label_csv = os.path.join(folder_path, "keypoint_classifier_label.csv")
-                    if os.path.exists(label_csv):
-                        with open(label_csv, newline='', encoding='utf-8-sig') as csvfile:
-                            reader = csv.reader(csvfile)
-                            for row in reader:
-                                if row:
-                                    gestures.add(row[0].strip())
+        if os.path.exists(label_csv):
+            with open(label_csv, newline='', encoding='utf-8-sig') as csvfile:
+                reader = csv.reader(csvfile)
+                for row in reader:
+                    if row:
+                        gestures.add(row[0].strip())
     
         return sorted(list(gestures))
-
+    
     def create_widgets(self):
         title = ctk.CTkLabel(self, text="Create New Preset", font=(font_family, 32, "bold"))
         title.pack(pady=20)
