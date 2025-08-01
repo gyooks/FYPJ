@@ -50,7 +50,7 @@ class CreatePreset(ctk.CTkFrame):
                 if os.path.isdir(folder_path):
                     label_csv = os.path.join(folder_path, "keypoint_classifier_label.csv")
                     if os.path.exists(label_csv):
-                        with open(label_csv, newline='', encoding='utf-8') as csvfile:
+                        with open(label_csv, newline='', encoding='utf-8-sig') as csvfile:
                             reader = csv.reader(csvfile)
                             for row in reader:
                                 if row:
