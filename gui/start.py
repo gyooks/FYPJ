@@ -18,7 +18,6 @@ from pynput.keyboard import Controller, Key
 from utils import CvFpsCalc
 from model import KeyPointClassifier
 from model import PointHistoryClassifier
-from hand_cursor import HandCursor
 
 
 def get_args():
@@ -80,7 +79,7 @@ def main():
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
         static_image_mode=use_static_image_mode,
-        max_num_hands=1,
+        max_num_hands=2,
         min_detection_confidence=min_detection_confidence,
         min_tracking_confidence=min_tracking_confidence,
     )
@@ -111,7 +110,7 @@ def main():
             subprocess.Popen([sys.executable, os.path.join(os.path.dirname(__file__), "GWBHands.py")])
             break
             
-        number, mode = select_mode(key, mode)
+
 
         ret, image = cap.read()
         if not ret:
@@ -123,56 +122,56 @@ def main():
         results = hands.process(image)
         image.flags.writeable = True
 
+        gesture_name = "None"
+        finger_gesture_id = -1
+
         if results.multi_hand_landmarks is not None:
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
+                hand_label = handedness.classification[0].label  # 'Left' or 'Right'
+
                 brect = calc_bounding_rect(debug_image, hand_landmarks)
                 landmark_list = calc_landmark_list(debug_image, hand_landmarks)
-
-                 # === Cursor control ===
-                index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
-                cursor_x = int(index_finger_tip.x * screen_width)
-                cursor_y = int(index_finger_tip.y * screen_height)
-                pyautogui.moveTo(cursor_x, cursor_y)
-
                 pre_landmarks = pre_process_landmark(landmark_list)
-                pre_point_history = pre_process_point_history(debug_image, point_history)
-                logging_csv(number, mode, pre_landmarks, pre_point_history, preset_paths)
 
-                hand_sign_id = keypoint_classifier(pre_landmarks)
+                if hand_label == "Right":
+                    # === Cursor control using right hand ===
+                    index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
+                    cursor_x = int(index_finger_tip.x * screen_width)
+                    cursor_y = int(index_finger_tip.y * screen_height)
+                    pyautogui.moveTo(cursor_x, cursor_y)
 
-                if hand_sign_id == 2:
-                    point_history.append(landmark_list[8])
-                else:
-                    point_history.append([0, 0])
-
-                finger_gesture_id = 0
-                if len(pre_point_history) == history_length * 2:
-                    finger_gesture_id = point_history_classifier(pre_point_history)
-                finger_gesture_history.append(finger_gesture_id)
-                
-
-                current_time = time.time()
-                if 0 <= hand_sign_id < len(keypoint_classifier_labels):
+                elif hand_label == "Left":
+                    # === Gesture recognition using left hand ===
+                    hand_sign_id = keypoint_classifier(pre_landmarks)
                     gesture_name = keypoint_classifier_labels[hand_sign_id]
-                    key_to_press = gesture_to_key.get(gesture_name)
+
+                    action = gesture_to_key.get(gesture_name)
+
                     if gesture_name != last_gesture:
-                        # Gesture changed — release old key (if any)
                         if held_key:
                             keyboard.release(held_key)
                             print(f"🛑 Released key: {held_key}")
                             held_key = None
 
-                        # Press new key if it's mapped
-                        if key_to_press:
-                            keyboard.press(key_to_press)
-                            held_key = key_to_press
-                            print(f"🟢 Holding key: {key_to_press}")
+                        if action == "left_click":
+                            pyautogui.click()
+                            print("🖱️ Left click triggered")
+
+                        elif action == "right_click":
+                            pyautogui.click(button="right")
+                            print("🖱️ Right click triggered")
+
+                        elif action:
+                            keyboard.press(action)
+                            held_key = action
+                            print(f"🟢 Holding key: {action}")
 
                         last_gesture = gesture_name
 
                 debug_image = draw_bounding_rect(True, debug_image, brect)
                 debug_image = draw_landmarks(debug_image, landmark_list)
-                debug_image = draw_info_text(debug_image, brect, handedness, gesture_name, str(finger_gesture_id))
+                debug_image = draw_info_text(debug_image, brect, handedness, gesture_name)
+                
         else:
             # Hand not detected — release any held keys
             if held_key:
@@ -184,24 +183,11 @@ def main():
             point_history.append([0, 0])
 
         debug_image = draw_point_history(debug_image, point_history)
-        debug_image = draw_info(debug_image, fps, mode, number)
+        
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
     cv.destroyAllWindows()
-
-
-def select_mode(key, mode):
-    number = -1
-    if 48 <= key <= 57:  # 0 ~ 9
-        number = key - 48
-    if key == 110:  # n
-        mode = 0
-    if key == 107:  # k
-        mode = 1
-    if key == 104:  # h
-        mode = 2
-    return number, mode
 
 
 def calc_bounding_rect(image, landmarks):
@@ -504,7 +490,7 @@ def draw_bounding_rect(use_brect, image, brect):
 
 
 def draw_info_text(image, brect, handedness, hand_sign_text,
-                   finger_gesture_text):
+                   ):
     cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[1] - 22),
                  (0, 0, 0), -1)
 
@@ -514,12 +500,6 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
     cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
                cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
 
-    if finger_gesture_text != "":
-        cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (0, 0, 0), 4, cv.LINE_AA)
-        cv.putText(image, "Finger Gesture:" + finger_gesture_text, (10, 60),
-                   cv.FONT_HERSHEY_SIMPLEX, 1.0, (255, 255, 255), 2,
-                   cv.LINE_AA)
 
     return image
 

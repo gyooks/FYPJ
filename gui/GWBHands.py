@@ -4,6 +4,16 @@ import subprocess
 import tkinter.messagebox as msgbox
 import os
 import nbformat
+import cv2
+import numpy as np
+import pyautogui
+import time
+import pandas as pd
+import threading
+import csv
+import json
+import numpy as np
+import mediapipe as mp
 
 from nbconvert.preprocessors import ExecutePreprocessor
 from settings import SettingsPage  # Import SettingsPage class
@@ -12,19 +22,18 @@ from how_to_use import HowtousePage  # Import HowtousePage class
 from gestures import Gestures  # Import Gestures class
 from create_gestures import CreateGestures  # Import CreateGestures class (webcam frame)
 from create_preset import CreatePreset
-from hand_cursor import HandCursor
+from utils import cvfpscalc
+from collections import deque
+from model import KeyPointClassifier
 
 # Get the directory where this script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
-
 notebook_path = os.path.join(script_dir, "keypoint_classification_EN.ipynb")
 
 # Create root window
 root = ctk.CTk()
 ctk.set_appearance_mode("dark")
 ctk.set_default_color_theme("blue")
-
-# Set the title and size of the window
 root.title("GWBHands")
 root.geometry("1280x720")
 
@@ -32,8 +41,7 @@ root.geometry("1280x720")
 current_preset = ctk.StringVar(value="Preset Used: None")
 selected_preset = None
 selected_preset_paths = None
-cursor_mode = False
-cursor_tracker = HandCursor(draw_cursor=True)
+
 
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
@@ -43,7 +51,10 @@ mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 title = ctk.CTkLabel(mainmenu, text="GWBHands", font=("Segoe UI", 32, "bold"))
 title.pack(pady=20)
 
-# Logic to switch frames
+# Cursor mode state
+cursor_running = False
+cursor_thread = None
+
 
 def show_mainmenu():
     settings_frame.place_forget()
@@ -157,16 +168,13 @@ change_preset_frame = ChangePreset(
 )
 
 
-def toggle_cursor_mode():
-    global cursor_mode
-    if not cursor_mode:
-        cursor_tracker.start()
-        msgbox.showinfo("Cursor Mode", "🟢 Hand Cursor Activated")
-        cursor_mode = True
-    else:
-        cursor_tracker.stop()
-        msgbox.showinfo("Cursor Mode", "🛑 Hand Cursor Deactivated")
-        cursor_mode = False
+def toggle_cursor_default():
+    python_executable = sys.executable
+    start_script_path = os.path.join(os.getcwd(), "gui", "cursor_toggle_default.py")
+    subprocess.Popen([
+        python_executable,
+        start_script_path
+    ])
 
 # Function for start button
 def start_gesture_app():
@@ -284,7 +292,7 @@ btn_tutorial.pack(pady=10)
 btn_settings = ctk.CTkButton(mainmenu, text="Settings", font=button_font, width=button_width, height=button_height, command=show_settings)
 btn_settings.pack(pady=10)
 
-btn_cursor_mode = ctk.CTkButton(mainmenu, text="Toggle Cursor Mode", font=button_font, width=button_width, height=button_height, command=toggle_cursor_mode)
+btn_cursor_mode = ctk.CTkButton(mainmenu, text="Toggle Cursor Mode", font=button_font,width=button_width, height=button_height, command=toggle_cursor_default)
 btn_cursor_mode.pack(pady=10)
 
 btn_exit = ctk.CTkButton(mainmenu, text="Exit", font=button_font, width=button_width, height=button_height, command=root.quit)
