@@ -55,7 +55,7 @@ class EditPreset(ctk.CTkFrame):
     def load_existing_mapping(self):
         if not os.path.exists(self.mapping_json_path):
             return {}
-        with open(self.mapping_json_path, 'r', encoding='utf-8') as f:
+        with open(self.mapping_json_path, 'r', encoding='utf-8-sig') as f:
             return json.load(f)
 
     def add_mapping_row(self, initial_gesture="", initial_key=""):
