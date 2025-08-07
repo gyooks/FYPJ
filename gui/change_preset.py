@@ -3,6 +3,7 @@ from edit_preset import EditPreset
 from create_preset import CreatePreset
 import json
 import os
+import shutil
 
 class ChangePreset(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, update_preset_callback=None, **kwargs):
@@ -22,7 +23,7 @@ class ChangePreset(ctk.CTkFrame):
                     mapping_file = os.path.join(folder_path, "mapping.json")
                     if os.path.exists(mapping_file):
                         try:
-                            with open(mapping_file, "r") as f:
+                            with open(mapping_file, "r", encoding='utf-8-sig') as f:
                                 self.presets_dict[folder_name] = json.load(f)
                         except json.JSONDecodeError:
                             print(f"⚠️ Invalid JSON in: {mapping_file}")
@@ -88,14 +89,28 @@ class ChangePreset(ctk.CTkFrame):
 
     def delete_preset(self, preset_name):
         print(f"Deleting preset: {preset_name}")
+
+        preset_dir = os.path.join(os.getcwd(), "gui", "presets", preset_name)
+
+        # Delete the folder and all its contents
+        if os.path.isdir(preset_dir):
+            try:
+                shutil.rmtree(preset_dir)
+                print(f"Deleted folder: {preset_dir}")
+            except Exception as e:
+                print(f"Failed to delete preset folder: {e}")
+        else:
+            print(f"Folder not found: {preset_dir}")
+
+        # Remove from list and refresh UI
         if preset_name in self.presets:
             self.presets.remove(preset_name)
-            self.refresh_preset_list()
+
+        self.refresh_preset_list()
 
     def edit_preset_window(self, preset):
-        
+        print(f"Editing preset: {preset}")
         self.pack_forget()
-    
         # Destroy previous EditPreset frame if it exists
         if hasattr(self, "edit_preset_frame") and self.edit_preset_frame is not None:
             self.edit_preset_frame.destroy()
@@ -105,7 +120,7 @@ class ChangePreset(ctk.CTkFrame):
             self.edit_preset_frame.pack_forget()
             self.edit_preset_frame.destroy()
             self.edit_preset_frame = None
-            self.pack()
+            self.place(relx=0.5, rely=0.5, anchor="center")
     
         # Instantiate new EditPreset frame
         self.edit_preset_frame = EditPreset(
@@ -146,8 +161,18 @@ class ChangePreset(ctk.CTkFrame):
         self.place(relx=0.5, rely=0.5, anchor="center")
 
     def close_and_return(self):
-        self.back_to_main_callback()
+        if hasattr(self, "edit_preset_frame") and self.edit_preset_frame is not None:
+            self.edit_preset_frame.place_forget()
+            self.edit_preset_frame.destroy()
+            self.edit_preset_frame = None
+        if hasattr(self, "create_preset_frame") and self.create_preset_frame is not None:
+            self.create_preset_frame.place_forget()
+            self.create_preset_frame.destroy()
+            self.create_preset_frame = None
         self.place_forget()
+        self.back_to_main_callback()  # ✅ ENSURES MAIN MENU IS SHOWN
+
+
 
     def refresh_preset_list(self):
     
@@ -161,7 +186,7 @@ class ChangePreset(ctk.CTkFrame):
                     mapping_file = os.path.join(folder_path, "mapping.json")
                     if os.path.exists(mapping_file):
                         try:
-                            with open(mapping_file, "r") as f:
+                            with open(mapping_file, "r", encoding='utf-8-sig') as f:
                                 self.presets_dict[folder_name] = json.load(f)
                         except json.JSONDecodeError:
                             print(f"⚠️ Invalid JSON in: {mapping_file}")

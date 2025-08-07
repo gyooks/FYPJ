@@ -99,5 +99,4 @@ class EditPreset(ctk.CTkFrame):
             messagebox.showerror("Error", f"Failed to save changes: {str(e)}")
 
     def cancel_and_close(self):
-        self.place_forget()
         self.back_callback()
