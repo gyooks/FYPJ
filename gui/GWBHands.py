@@ -15,6 +15,7 @@ import json
 import numpy as np
 import mediapipe as mp
 
+
 from nbconvert.preprocessors import ExecutePreprocessor
 from settings import SettingsPage  # Import SettingsPage class
 from change_preset import ChangePreset  # Import ChangePreset class
@@ -60,17 +61,18 @@ def show_mainmenu():
     settings_frame.place_forget()
     how_to_use_frame.place_forget()
     gestures_frame.place_forget()
-    
+
     if 'create_gestures_frame' in globals() and create_gestures_frame is not None:
         create_gestures_frame.place_forget()
-    mainmenu.place(relx=0.5, rely=0.5, anchor="center")
-    
+
     if 'change_preset_frame' in globals() and change_preset_frame is not None:
         change_preset_frame.place_forget()
         if hasattr(change_preset_frame, "edit_preset_frame") and change_preset_frame.edit_preset_frame is not None:
             change_preset_frame.edit_preset_frame.place_forget()
         if hasattr(change_preset_frame, "create_preset_frame") and change_preset_frame.create_preset_frame is not None:
             change_preset_frame.create_preset_frame.place_forget()
+
+    mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_settings():
     mainmenu.place_forget()
@@ -150,7 +152,7 @@ def show_createpreset():
 
     create_preset_frame = CreatePreset(
         root,
-        gesture_csv_path="gestures.csv",  # Update this path if needed
+        gesture_csv_path="gestures.csv",  
         save_dir="presets",               # Preset directory
         back_callback=show_mainmenu,
         width=1280,
