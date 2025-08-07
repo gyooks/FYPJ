@@ -13,6 +13,8 @@ import json
 import sys
 import subprocess
 import pyautogui
+import psutil
+import signal
 
 from pynput.keyboard import Controller, Key
 from utils import CvFpsCalc
@@ -32,12 +34,16 @@ def get_args():
     parser.add_argument('--keypoints', required=True)
     parser.add_argument('--labels', required=True)
     parser.add_argument('--point_history', required=True)
+    parser.add_argument("--launched-from-gui", action="store_true")
 
     return parser.parse_args()
 
 
+    
+
 def main():
     args = get_args()
+    launched_from_gui = args.launched_from_gui
     cap_device = args.device
     cap_width = args.width
     cap_height = args.height
@@ -107,8 +113,15 @@ def main():
             break
             
         elif key == ord('b'):
-            subprocess.Popen([sys.executable, os.path.join(os.path.dirname(__file__), "GWBHands.py")])
-            break
+            print("Closing webcam and signaling GUI to unhide.")
+            # Close webcam and break loop here...
+
+            # Create flag file to notify GUI
+            flag_path = os.path.join(os.path.dirname(__file__), "unhide_gui.flag")
+            with open(flag_path, "w") as f:
+                f.write("unhide")
+
+            break  # Exit webcam loop, and end script
             
 
 
@@ -527,7 +540,6 @@ def draw_info(image, fps, mode, number):
                        cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
                        cv.LINE_AA)
     return image
-
 
 if __name__ == '__main__':
     main()
