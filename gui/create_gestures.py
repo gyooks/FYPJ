@@ -103,7 +103,7 @@ class CreateGestures(ctk.CTkFrame):
         popup.geometry("360x160")
         popup.grab_set()
 
-        label = ctk.CTkLabel(popup, text="Move your hand around so the system\ncan capture different positions.", font=("Segoe UI", 14), justify="center")
+        label = ctk.CTkLabel(popup, text="Move your left hand around so the system\ncan capture different positions.", font=("Segoe UI", 14), justify="center")
         label.pack(pady=20)
 
         ok_button = ctk.CTkButton(popup, text="OK", command=lambda: self.start_capture_with_delay(popup))

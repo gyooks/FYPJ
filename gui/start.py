@@ -70,7 +70,7 @@ def main():
         print(f"❌ Mapping or labels file not found.\nMapping: {mapping_path}\nLabels: {labels_path}")
         return
 
-    with open(mapping_path, 'r') as f:
+    with open(mapping_path, 'r', encoding="utf-8-sig") as f:
         gesture_to_key = json.load(f)
 
     with open(labels_path, encoding='utf-8-sig') as f:
