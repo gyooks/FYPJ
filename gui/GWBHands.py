@@ -42,7 +42,7 @@ root.geometry("1280x720")
 current_preset = ctk.StringVar(value="Preset Used: None")
 selected_preset = None
 selected_preset_paths = None
-
+cursor_process = None
 
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
@@ -180,12 +180,44 @@ change_preset_frame = ChangePreset(
 
 
 def toggle_cursor_default():
+    global cursor_process
+
+    if cursor_process is not None and cursor_process.poll() is None:
+        cursor_process.terminate()
+        cursor_process = None
+        msgbox.showinfo("Cursor Mode", "Cursor mode stopped.")
+        return
+
     python_executable = sys.executable
-    start_script_path = os.path.join(os.getcwd(), "gui", "cursor_toggle_default.py")
-    subprocess.Popen([
+    start_script_path = os.path.join(os.getcwd(), "gui", "start.py")
+    
+
+    default_preset_paths = {
+        "mapping_path": "gui/presets/Default/mapping.json",
+        "keypoint_csv_path": "gui/presets/Default/keypoint.csv",
+        "label_csv_path": "gui/presets/Default/keypoint_classifier_label.csv",
+        "point_history_csv_path": "gui/presets/Default/point_history.csv"
+    }
+
+    for key, path in default_preset_paths.items():
+        if not os.path.exists(path):
+            msgbox.showerror("Missing File", f"{key} not found at:\n{path}")
+            return
+
+    if not os.path.exists(start_script_path):
+        msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
+        return
+
+    cursor_process = subprocess.Popen([
         python_executable,
-        start_script_path
+        start_script_path,
+        "--mapping", default_preset_paths["mapping_path"],
+        "--keypoints", default_preset_paths["keypoint_csv_path"],
+        "--labels", default_preset_paths["label_csv_path"],
+        "--point_history", default_preset_paths["point_history_csv_path"]
     ])
+
+    msgbox.showinfo("Cursor Mode", "Cursor mode started.")
 
 # Function for start button
 def start_gesture_app():
@@ -207,7 +239,7 @@ def start_gesture_app():
         msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
         return
     root.withdraw()  # Add this line to hide the GUI
-
+    root.after(1000, check_unhide_flag)
     preset_info = selected_preset_paths
     subprocess.Popen([
         python_executable,
@@ -217,6 +249,17 @@ def start_gesture_app():
         "--labels", selected_preset_paths["label_csv_path"],
         "--point_history", selected_preset_paths["point_history_csv_path"]
     ])
+
+def check_unhide_flag():
+    flag_path = os.path.join(os.getcwd(), "gui", "unhide_gui.flag")
+    if os.path.exists(flag_path):
+        os.remove(flag_path)
+        print("Unhiding main GUI")
+        root.deiconify()  # Show window again
+        return  # Stop checking after unhide
+
+    # Schedule to check again in 1 second
+    root.after(1000, check_unhide_flag)
 
 def retrain_model_from_notebook():
     import os
