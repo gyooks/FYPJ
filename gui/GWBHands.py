@@ -4,32 +4,20 @@ import subprocess
 import tkinter.messagebox as msgbox
 import os
 import nbformat
-import cv2
-import numpy as np
-import pyautogui
-import time
-import pandas as pd
-import threading
-import csv
-import json
-import numpy as np
-import mediapipe as mp
 
 
 from nbconvert.preprocessors import ExecutePreprocessor
-from settings import SettingsPage  # Import SettingsPage class
-from change_preset import ChangePreset  # Import ChangePreset class
-from how_to_use import HowtousePage  # Import HowtousePage class
-from gestures import Gestures  # Import Gestures class
-from create_gestures import CreateGestures  # Import CreateGestures class (webcam frame)
+from settings import SettingsPage  
+from change_preset import ChangePreset  
+from how_to_use import HowtousePage  
+from gestures import Gestures  
+from create_gestures import CreateGestures
 from create_preset import CreatePreset
-from utils import cvfpscalc
-from collections import deque
-from model import KeyPointClassifier
+
 
 # Get the directory where this script is running
 script_dir = os.path.dirname(os.path.abspath(__file__))
-notebook_path = os.path.join(script_dir, "keypoint_classification_EN.ipynb")
+notebook_path = os.path.join(script_dir, "keypoint_classification.ipynb")
 
 # Create root window
 root = ctk.CTk()
@@ -43,6 +31,8 @@ current_preset = ctk.StringVar(value="Preset Used: None")
 selected_preset = None
 selected_preset_paths = None
 cursor_process = None
+cursor_running = False
+cursor_thread = None
 
 # Create main menu frame
 mainmenu = ctk.CTkFrame(root, width=1280, height=720, fg_color="transparent")
@@ -51,10 +41,6 @@ mainmenu.place(relx=0.5, rely=0.5, anchor="center")
 # App title
 title = ctk.CTkLabel(mainmenu, text="GWBHands", font=("Segoe UI", 32, "bold"))
 title.pack(pady=20)
-
-# Cursor mode state
-cursor_running = False
-cursor_thread = None
 
 
 def show_mainmenu():
@@ -81,7 +67,7 @@ def show_settings():
 def show_changepreset():
     mainmenu.place_forget()
     settings_frame.place_forget()
-    change_preset_frame.refresh_preset_list()  # Refresh preset list
+    change_preset_frame.refresh_preset_list()
     change_preset_frame.place(relx=0.5, rely=0.5, anchor="center")
 
 def show_gestures():
@@ -128,7 +114,8 @@ def show_create_gestures():
         create_gestures_frame.stop_webcam()
         create_gestures_frame.place_forget()
         show_gestures()
-        if gestures_frame:  # Refresh gestures if it's loaded
+        # Refresh gestures if it's loaded
+        if gestures_frame:
             gestures_frame.refresh_gesture_list()
 
     # Create new gesture creation frame with selected preset
@@ -153,7 +140,7 @@ def show_createpreset():
     create_preset_frame = CreatePreset(
         root,
         gesture_csv_path="gestures.csv",  
-        save_dir="presets",               # Preset directory
+        save_dir="presets",
         back_callback=show_mainmenu,
         width=1280,
         height=720,
@@ -166,9 +153,8 @@ def update_current_preset(preset_name, preset_paths):
     selected_preset = preset_name
     selected_preset_paths = preset_paths
     current_preset.set(f"Preset Used: {preset_name}")
-    print("✅ Loaded preset paths:", preset_paths)
+    print("Loaded preset paths:", preset_paths)
 
-# In the section that initializes the change_preset_frame:
 change_preset_frame = ChangePreset(
     root,
     update_preset_callback=update_current_preset,
@@ -177,7 +163,6 @@ change_preset_frame = ChangePreset(
     height=900,
     fg_color="transparent"
 )
-
 
 def toggle_cursor_default():
     global cursor_process
@@ -195,8 +180,7 @@ def toggle_cursor_default():
     default_preset_paths = {
         "mapping_path": "gui/presets/Default/mapping.json",
         "keypoint_csv_path": "gui/presets/Default/keypoint.csv",
-        "label_csv_path": "gui/presets/Default/keypoint_classifier_label.csv",
-        "point_history_csv_path": "gui/presets/Default/point_history.csv"
+        "label_csv_path": "gui/presets/Default/keypoint_classifier_label.csv"
     }
 
     for key, path in default_preset_paths.items():
@@ -213,8 +197,7 @@ def toggle_cursor_default():
         start_script_path,
         "--mapping", default_preset_paths["mapping_path"],
         "--keypoints", default_preset_paths["keypoint_csv_path"],
-        "--labels", default_preset_paths["label_csv_path"],
-        "--point_history", default_preset_paths["point_history_csv_path"]
+        "--labels", default_preset_paths["label_csv_path"]
     ])
 
     msgbox.showinfo("Cursor Mode", "Cursor mode started.")
@@ -226,28 +209,22 @@ def start_gesture_app():
         return
 
     python_executable = sys.executable
-
-    # Since start.py is in the same folder as this file
     start_script_path = os.path.join(os.getcwd(), "gui", "start.py")
 
-
-    # Debug output
     print("Launching:", start_script_path)
     print("Exists?", os.path.exists(start_script_path))
 
     if not os.path.exists(start_script_path):
         msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
         return
-    root.withdraw()  # Add this line to hide the GUI
+    root.withdraw()
     root.after(1000, check_unhide_flag)
-    preset_info = selected_preset_paths
     subprocess.Popen([
         python_executable,
         start_script_path,
         "--mapping", selected_preset_paths["mapping_path"],
         "--keypoints", selected_preset_paths["keypoint_csv_path"],
-        "--labels", selected_preset_paths["label_csv_path"],
-        "--point_history", selected_preset_paths["point_history_csv_path"]
+        "--labels", selected_preset_paths["label_csv_path"]
     ])
 
 def check_unhide_flag():
@@ -255,18 +232,12 @@ def check_unhide_flag():
     if os.path.exists(flag_path):
         os.remove(flag_path)
         print("Unhiding main GUI")
-        root.deiconify()  # Show window again
-        return  # Stop checking after unhide
+        root.deiconify()
+        return
 
-    # Schedule to check again in 1 second
     root.after(1000, check_unhide_flag)
 
 def retrain_model_from_notebook():
-    import os
-    import nbformat
-    from nbconvert.preprocessors import ExecutePreprocessor
-    import tkinter.messagebox as msgbox
-
     # Ensure a preset is selected
     if not selected_preset:
         msgbox.showwarning("No Preset Selected", "Please select a preset before retraining.")
@@ -274,7 +245,7 @@ def retrain_model_from_notebook():
 
     # Define paths
     script_dir = os.path.dirname(os.path.abspath(__file__))
-    notebook_path = os.path.join(script_dir, "keypoint_classification_EN.ipynb")
+    notebook_path = os.path.join(script_dir, "keypoint_classification.ipynb")
 
     if not os.path.exists(notebook_path):
         msgbox.showerror("Notebook Not Found", f"Cannot find: {notebook_path}")
@@ -288,8 +259,8 @@ def retrain_model_from_notebook():
         msgbox.showerror("Preset Error", "Selected preset is missing key paths.")
         return
 
-    # ✅ Show loading indicator
-    loading_label.configure(text="🔄 Training model... Please wait.")
+    # Show loading indicator
+    loading_label.configure(text="Training model... Please wait.")
     mainmenu.update()
 
     try:
@@ -302,7 +273,6 @@ def retrain_model_from_notebook():
 
         ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
 
-        # Optional: pass environment variables
         os.environ["LABEL_CSV"] = label_file
         os.environ["KEYPOINT_CSV"] = dataset_file
 
@@ -313,7 +283,7 @@ def retrain_model_from_notebook():
         msgbox.showerror("Error", f"An error occurred:\n{str(e)}")
 
     finally:
-        # ✅ Hide loading indicator
+        # Hide loading indicator
         loading_label.configure(text="")
         mainmenu.update()
 

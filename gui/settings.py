@@ -58,7 +58,6 @@ class SettingsPage(ctk.CTkFrame):
         cancel_button.pack(pady=10)
 
     def save_and_return(self):
-        # To add logic to save settings later
         self.back_to_main_callback()
 
     def cancel_and_return(self):

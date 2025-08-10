@@ -30,7 +30,7 @@ class CreatePreset(ctk.CTkFrame):
         # Container for gesture–key mapping rows
         self.mapping_container = ctk.CTkFrame(self, fg_color="transparent")
         self.mapping_container.pack(pady=(5, 10))
-        self.add_mapping_row()  # Add first row by default
+        self.add_mapping_row()
 
         # Confirm/Cancel Buttons
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
@@ -146,12 +146,10 @@ class CreatePreset(ctk.CTkFrame):
             required_files = [
                 "keypoint_classifier_label.csv",
                 "keypoint.csv",
-                "mapping.json",  
-                "point_history.csv",
-                "point_history_classifier_label.csv"
+                "mapping.json"
             ]
 
-            # ✅ Copy files from Default to new preset
+            # Copy files from Default to new preset
             for filename in required_files:
                 src = os.path.join(default_folder, filename)
                 dst = os.path.join(preset_folder, filename)
@@ -162,7 +160,7 @@ class CreatePreset(ctk.CTkFrame):
 
                 shutil.copy2(src, dst)
 
-            # ✅ Overwrite mapping.json with user-defined gesture→key mapping
+            # Overwrite mapping.json with user-defined gesture→key mapping
             mapping_path = os.path.join(preset_folder, "mapping.json")
             with open(mapping_path, "w", encoding="utf-8") as jsonfile:
                 json.dump(gesture_to_key, jsonfile, indent=4)

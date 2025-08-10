@@ -5,7 +5,6 @@ import mediapipe as mp
 import os
 import csv
 
-
 class CreateGestures(ctk.CTkFrame):
     def __init__(self, master, back_to_gestures_callback, selected_preset=None, **kwargs):
         super().__init__(master, **kwargs)
@@ -62,7 +61,7 @@ class CreateGestures(ctk.CTkFrame):
 
         self.save_btn = ctk.CTkButton(btn_frame, text="Stop to Save", font=button_font, command=self.save_gesture, state="disabled")
         self.save_btn.grid(row=0, column=2, padx=10)
-        self.save_btn.grid_remove()  # Hidden but functional
+        self.save_btn.grid_remove()
 
         back_btn = ctk.CTkButton(btn_frame, text="Back", font=button_font, command=self.go_back)
         back_btn.grid(row=0, column=3, padx=10)
@@ -71,7 +70,7 @@ class CreateGestures(ctk.CTkFrame):
         if not self.is_running:
             self.cap = cv2.VideoCapture(0)
             if not self.cap.isOpened():
-                print("❌ Error: Could not open webcam.")
+                print("Error: Could not open webcam.")
                 return
             self.is_running = True
             self.update_frame()
@@ -82,16 +81,16 @@ class CreateGestures(ctk.CTkFrame):
 
         if gesture_name:
             self.current_gesture_name = gesture_name.strip()
-            print(f"🟢 Recording started for gesture: {self.current_gesture_name}")
+            print(f"Recording started for gesture: {self.current_gesture_name}")
             self.capture_btn.configure(state="normal")
             self.save_btn.configure(state="disabled")
         else:
             self.current_gesture_name = None
-            print("⚠️ Gesture name input canceled.")
+            print("Gesture name input canceled.")
 
     def capture(self):
         if not self.current_gesture_name:
-            print("❌ You must start recording with a name before capturing.")
+            print("You must start recording with a name before capturing.")
             return
         if self.is_auto_capturing:
             return
@@ -122,7 +121,7 @@ class CreateGestures(ctk.CTkFrame):
         self.is_auto_capturing = True
         self.capture_btn.configure(state="disabled")
         self.save_btn.configure(state="disabled")
-        print(f"🔄 Starting automatic capture of {self.auto_capture_target} samples...")
+        print(f"Starting automatic capture of {self.auto_capture_target} samples...")
         self.auto_capture_loop()
 
     def auto_capture_loop(self):
@@ -131,7 +130,7 @@ class CreateGestures(ctk.CTkFrame):
 
         ret, frame = self.cap.read()
         if not ret:
-            print("❌ Failed to capture frame.")
+            print("Failed to capture frame.")
             self.is_auto_capturing = False
             return
 
@@ -147,11 +146,11 @@ class CreateGestures(ctk.CTkFrame):
                 self.captured_keypoints.append(processed)
                 self.auto_capture_count += 1
                 self.sample_counter.configure(text=f"Samples: {self.auto_capture_count} / {self.auto_capture_target}")
-                print(f"✅ Captured sample {self.auto_capture_count}/{self.auto_capture_target}")
+                print(f"Captured sample {self.auto_capture_count}/{self.auto_capture_target}")
                 break
 
         if self.auto_capture_count >= self.auto_capture_target:
-            print("🛑 Automatic capture complete.")
+            print("Automatic capture complete.")
             self.is_auto_capturing = False
             self.save_gesture()
             return
@@ -160,7 +159,7 @@ class CreateGestures(ctk.CTkFrame):
 
     def save_gesture(self):
         if not self.current_gesture_name:
-            print("❌ No gesture name provided.")
+            print("No gesture name provided.")
             return
 
         try:
@@ -192,15 +191,15 @@ class CreateGestures(ctk.CTkFrame):
                 for kp in self.captured_keypoints:
                     writer.writerow([gesture_index] + kp)
 
-            print(f"✅ Gesture '{self.current_gesture_name}' saved with {len(self.captured_keypoints)} samples.")
-            self.show_success_prompt("✅ Gesture name and movement saved!")
+            print(f"Gesture '{self.current_gesture_name}' saved with {len(self.captured_keypoints)} samples.")
+            self.show_success_prompt("Gesture name and movement saved!")
             self.current_gesture_name = None
             self.captured_keypoints.clear()
             self.current_label_index = None
             self.sample_counter.configure(text="Samples: 0 / 50")
 
         except Exception as e:
-            print(f"❌ Error saving gesture: {e}")
+            print(f"Error saving gesture: {e}")
 
     def stop_webcam(self):
         if self.is_running:
@@ -239,7 +238,7 @@ class CreateGestures(ctk.CTkFrame):
             self.video_label.configure(image=ctk_img)
             self.video_label.image = ctk_img
         else:
-            print("❌ Failed to grab frame")
+            print("Failed to grab frame")
 
         self.after(15, self.update_frame)
 
@@ -271,14 +270,3 @@ class CreateGestures(ctk.CTkFrame):
         self.back_to_gestures_callback()
 
 
-# Optional test run
-if __name__ == "__main__":
-    def dummy_back():
-        print("Back pressed")
-
-    root = ctk.CTk()
-    root.geometry("900x700")
-    root.title("Test CreateGestures")
-
-    frame = CreateGestures(root, back_to_gestures_callback=dummy_back, selected_preset={"label_csv_path": "keypoint_classifier_label.csv"})
-    frame.pack(expand=True, fill="both")

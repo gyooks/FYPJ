@@ -4,7 +4,7 @@ import os
 
 # Paths
 label_csv_path = 'model/keypoint_classifier/keypoint_classifier_label.csv'
-preset_json_path = 'presets/new_preset.json'  # Adjust this path as needed
+preset_json_path = 'presets/new_preset.json'
 
 # Load gesture labels from CSV
 with open(label_csv_path, encoding='utf-8-sig') as f:
@@ -25,7 +25,7 @@ while True:
         idx = int(idx)
         gesture = gesture_labels[idx]
     except (ValueError, IndexError):
-        print("❌ Invalid index. Try again.")
+        print("Invalid index. Try again.")
         continue
 
     key = input(f"Map gesture '{gesture}' to which key? (e.g., w, enter): ").strip()
@@ -36,4 +36,4 @@ os.makedirs(os.path.dirname(preset_json_path), exist_ok=True)
 with open(preset_json_path, 'w') as f:
     json.dump(gesture_to_key, f, indent=4)
 
-print(f"\n✅ Preset saved to {preset_json_path}")
+print(f"\nPreset saved to {preset_json_path}")

@@ -26,9 +26,9 @@ class ChangePreset(ctk.CTkFrame):
                             with open(mapping_file, "r", encoding='utf-8-sig') as f:
                                 self.presets_dict[folder_name] = json.load(f)
                         except json.JSONDecodeError:
-                            print(f"⚠️ Invalid JSON in: {mapping_file}")
+                            print(f"Invalid JSON in: {mapping_file}")
         else:
-            print("⚠️ Presets folder not found:", preset_base_dir)
+            print("Presets folder not found:", preset_base_dir)
 
         self.presets = list(self.presets_dict.keys())
 
@@ -78,11 +78,10 @@ class ChangePreset(ctk.CTkFrame):
         preset_paths = {
             "mapping_path": os.path.join(preset_base, "mapping.json"),
             "keypoint_csv_path": os.path.join(preset_base, "keypoint.csv"),
-            "label_csv_path": os.path.join(preset_base, "keypoint_classifier_label.csv"),
-            "point_history_csv_path": os.path.join(preset_base, "point_history.csv")
+            "label_csv_path": os.path.join(preset_base, "keypoint_classifier_label.csv")
         }
 
-        print("✅ Sending preset paths to GWBHands.py:", preset_paths)
+        print("Sending preset paths to GWBHands.py:", preset_paths)
         if self.update_preset_callback:
             self.update_preset_callback(preset_name, preset_paths)
         self.close_and_return()
@@ -170,7 +169,7 @@ class ChangePreset(ctk.CTkFrame):
             self.create_preset_frame.destroy()
             self.create_preset_frame = None
         self.place_forget()
-        self.back_to_main_callback()  # ✅ ENSURES MAIN MENU IS SHOWN
+        self.back_to_main_callback()
 
 
 
@@ -189,11 +188,11 @@ class ChangePreset(ctk.CTkFrame):
                             with open(mapping_file, "r", encoding='utf-8-sig') as f:
                                 self.presets_dict[folder_name] = json.load(f)
                         except json.JSONDecodeError:
-                            print(f"⚠️ Invalid JSON in: {mapping_file}")
+                            print(f"Invalid JSON in: {mapping_file}")
     
         self.presets = list(self.presets_dict.keys())
     
-        # 🧹 Clear and recreate widgets
+        # Clear and recreate widgets
         for widget in self.winfo_children():
             widget.destroy()
         self.create_widgets()

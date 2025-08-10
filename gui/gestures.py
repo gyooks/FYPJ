@@ -2,8 +2,6 @@ import customtkinter as ctk
 import tkinter.messagebox as messagebox
 import csv
 import os
-import tkinter.simpledialog as simpledialog
-
 
 class Gestures(ctk.CTkFrame):
     def __init__(self, master, back_to_main_callback, selected_preset=None, selected_gesture=None, update_gesture_callback=None, create_gesture_callback=None, **kwargs):
@@ -26,15 +24,16 @@ class Gestures(ctk.CTkFrame):
                 try:
                     with open(label_csv_path, 'r', encoding='utf-8') as f:
                         reader = csv.reader(f)
-                        gestures = [row[0].strip() for row in reader if row]  # Read first column, strip whitespace
+                        # Read first column, strip whitespace
+                        gestures = [row[0].strip() for row in reader if row] 
                 except Exception as e:
-                    print(f"❌ Failed to read gesture names from CSV: {e}")
+                    print(f"Failed to read gesture names from CSV: {e}")
                     messagebox.showerror("CSV Error", f"Failed to load gesture names:\n{e}")
             else:
-                print("❌ label_csv_path does not exist:", label_csv_path)
+                print("label_csv_path does not exist:", label_csv_path)
                 messagebox.showerror("Missing File", f"Could not find gesture label file:\n{label_csv_path}")
         else:
-            print("❌ No valid selected_preset or label_csv_path")
+            print("No valid selected_preset or label_csv_path")
         return gestures if gestures else ["No gestures found"]
 
     def create_widgets(self):
@@ -89,7 +88,7 @@ class Gestures(ctk.CTkFrame):
             messagebox.showerror("Error", f"Failed to update label CSV:\n{e}")
             return
 
-        # ✅ Actually perform deletion from keypoint.csv
+        # Actually perform deletion from keypoint.csv
         self.remove_rows_by_gesture_id(gesture_index)
         self.refresh_gesture_list()
 
@@ -98,7 +97,7 @@ class Gestures(ctk.CTkFrame):
         keypoint_csv_path = self.selected_preset.get("keypoint_csv_path")
 
         if not keypoint_csv_path or not os.path.exists(keypoint_csv_path):
-            print("⚠️ keypoint.csv not found at:", keypoint_csv_path)
+            print("keypoint.csv not found at:", keypoint_csv_path)
             return
 
         try:
@@ -113,23 +112,24 @@ class Gestures(ctk.CTkFrame):
                 if not row:
                     continue
                 try:
-                    row_id = int(float(row[0]))  # handles both "2" and "2.0"
+                    # handles both "2" and "2.0"
+                    row_id = int(float(row[0]))
                     if row_id == gesture_index:
                         removed_count += 1
-                        continue  # Delete this row
+                        continue
                     elif row_id > gesture_index:
-                        row[0] = str(row_id - 1)  # Decrement index
+                        row[0] = str(row_id - 1)
                         reindexed_count += 1
                 except ValueError:
-                    print(f"⚠️ Could not parse row ID: {row[0]}")
+                    print(f"Could not parse row ID: {row[0]}")
                 updated_rows.append(row)
 
             with open(keypoint_csv_path, "w", newline="", encoding="utf-8") as f:
                 writer = csv.writer(f)
                 writer.writerows(updated_rows)
 
-            print(f"🧹 Removed {removed_count} rows for gesture index {gesture_index}")
-            print(f"🔢 Reindexed {reindexed_count} rows after deletion")
+            print(f"Removed {removed_count} rows for gesture index {gesture_index}")
+            print(f"Reindexed {reindexed_count} rows after deletion")
 
         except Exception as e:
             messagebox.showerror("Error", f"Failed to update keypoint.csv:\n{e}")
@@ -178,7 +178,7 @@ class RenameGesturePopup(ctk.CTkToplevel):
         self.title("Rename Gesture")
         self.geometry("400x200")
         self.resizable(False, False)
-        self.grab_set()  # Make modal
+        self.grab_set()
         self.focus()
 
         self.current_name = current_name

@@ -2,25 +2,15 @@ import csv
 import copy
 import argparse
 import itertools
-from collections import Counter, deque
 import os
 import cv2 as cv
 import numpy as np
 import mediapipe as mp
 import keyboard
-import time
 import json
-import sys
-import subprocess
 import pyautogui
-import psutil
-import signal
 
-from pynput.keyboard import Controller, Key
-from utils import CvFpsCalc
 from model import KeyPointClassifier
-from model import PointHistoryClassifier
-
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -33,17 +23,12 @@ def get_args():
     parser.add_argument('--mapping', required=True)
     parser.add_argument('--keypoints', required=True)
     parser.add_argument('--labels', required=True)
-    parser.add_argument('--point_history', required=True)
     parser.add_argument("--launched-from-gui", action="store_true")
 
     return parser.parse_args()
 
-
-    
-
 def main():
     args = get_args()
-    launched_from_gui = args.launched_from_gui
     cap_device = args.device
     cap_width = args.width
     cap_height = args.height
@@ -51,23 +36,12 @@ def main():
     min_detection_confidence = args.min_detection_confidence
     min_tracking_confidence = args.min_tracking_confidence
 
-    # === Resolve preset paths ===
-    base_dir = os.path.dirname(os.path.abspath(__file__))
+    # Resolve preset paths
     mapping_path = args.mapping
     labels_path = args.labels
-    keypoints_path = args.keypoints
-    point_history_path = args.point_history
-
-    preset_paths = {
-        "mapping_path": mapping_path,
-        "keypoint_csv_path": keypoints_path,
-        "label_csv_path": labels_path,
-        "point_history_csv_path": point_history_path
-    }
     
-
     if not (os.path.exists(mapping_path) and os.path.exists(labels_path)):
-        print(f"❌ Mapping or labels file not found.\nMapping: {mapping_path}\nLabels: {labels_path}")
+        print(f"Mapping or labels file not found.\nMapping: {mapping_path}\nLabels: {labels_path}")
         return
 
     with open(mapping_path, 'r', encoding="utf-8-sig") as f:
@@ -76,12 +50,12 @@ def main():
     with open(labels_path, encoding='utf-8-sig') as f:
         keypoint_classifier_labels = [row[0] for row in csv.reader(f)]
 
-    # === Camera setup ===
+    # Camera
     cap = cv.VideoCapture(cap_device)
     cap.set(cv.CAP_PROP_FRAME_WIDTH, cap_width)
     cap.set(cv.CAP_PROP_FRAME_HEIGHT, cap_height)
 
-    # === Models ===
+    # Model
     mp_hands = mp.solutions.hands
     hands = mp_hands.Hands(
         static_image_mode=use_static_image_mode,
@@ -90,41 +64,24 @@ def main():
         min_tracking_confidence=min_tracking_confidence,
     )
     keypoint_classifier = KeyPointClassifier()
-    point_history_classifier = PointHistoryClassifier()
 
-    # === Buffers ===
-    cvFpsCalc = CvFpsCalc(buffer_len=10)
-    history_length = 16
-    point_history = deque(maxlen=history_length)
-    finger_gesture_history = deque(maxlen=history_length)
-
-    mode = 0
-    last_action_time = 0
-    cooldown_seconds = 1
     last_gesture = None
     held_key = None
 
     screen_width, screen_height = pyautogui.size()
 
     while True:
-        fps = cvFpsCalc.get()
-        key = cv.waitKey(10)
-        if key == 27:
-            break
-            
-        elif key == ord('b'):
-            print("Closing webcam and signaling GUI to unhide.")
-            # Close webcam and break loop here...
 
-            # Create flag file to notify GUI
+        key = cv.waitKey(10)     
+        if key == ord('b'):
+            print("Closing webcam and signaling GUI to unhide.")
+            
             flag_path = os.path.join(os.path.dirname(__file__), "unhide_gui.flag")
             with open(flag_path, "w") as f:
                 f.write("unhide")
 
-            break  # Exit webcam loop, and end script
+            break
             
-
-
         ret, image = cap.read()
         if not ret:
             break
@@ -136,48 +93,50 @@ def main():
         image.flags.writeable = True
 
         gesture_name = "None"
-        finger_gesture_id = -1
 
         if results.multi_hand_landmarks is not None:
             for hand_landmarks, handedness in zip(results.multi_hand_landmarks, results.multi_handedness):
-                hand_label = handedness.classification[0].label  # 'Left' or 'Right'
+                hand_label = handedness.classification[0].label
 
                 brect = calc_bounding_rect(debug_image, hand_landmarks)
                 landmark_list = calc_landmark_list(debug_image, hand_landmarks)
                 pre_landmarks = pre_process_landmark(landmark_list)
 
                 if hand_label == "Right":
-                    # === Cursor control using right hand ===
+                    # Cursor control using right hand
                     index_finger_tip = hand_landmarks.landmark[mp_hands.HandLandmark.INDEX_FINGER_TIP]
                     cursor_x = int(index_finger_tip.x * screen_width)
                     cursor_y = int(index_finger_tip.y * screen_height)
                     pyautogui.moveTo(cursor_x, cursor_y)
 
                 elif hand_label == "Left":
-                    # === Gesture recognition using left hand ===
+                    # Gesture recognition using left hand
                     hand_sign_id = keypoint_classifier(pre_landmarks)
-                    gesture_name = keypoint_classifier_labels[hand_sign_id]
+                    if 0 <= hand_sign_id < len(keypoint_classifier_labels):
+                        gesture_name = keypoint_classifier_labels[hand_sign_id]
+                    else:
+                        gesture_name = ""
 
                     action = gesture_to_key.get(gesture_name)
 
                     if gesture_name != last_gesture:
                         if held_key:
                             keyboard.release(held_key)
-                            print(f"🛑 Released key: {held_key}")
+                            print(f"Released key: {held_key}")
                             held_key = None
 
                         if action == "left_click":
                             pyautogui.click()
-                            print("🖱️ Left click triggered")
+                            print("Left click triggered")
 
                         elif action == "right_click":
                             pyautogui.click(button="right")
-                            print("🖱️ Right click triggered")
+                            print("Right click triggered")
 
                         elif action:
                             keyboard.press(action)
                             held_key = action
-                            print(f"🟢 Holding key: {action}")
+                            print(f"Holding key: {action}")
 
                         last_gesture = gesture_name
 
@@ -186,22 +145,17 @@ def main():
                 debug_image = draw_info_text(debug_image, brect, handedness, gesture_name)
                 
         else:
-            # Hand not detected — release any held keys
             if held_key:
                 keyboard.release(held_key)
-                print(f"🛑 Released key (no hand): {held_key}")
+                print(f"Released key (no hand): {held_key}")
                 held_key = None
 
             last_gesture = None
-            point_history.append([0, 0])
-
-        debug_image = draw_point_history(debug_image, point_history)
         
         cv.imshow('Hand Gesture Recognition', debug_image)
 
     cap.release()
     cv.destroyAllWindows()
-
 
 def calc_bounding_rect(image, landmarks):
     image_width, image_height = image.shape[1], image.shape[0]
@@ -229,12 +183,10 @@ def calc_landmark_list(image, landmarks):
     for _, landmark in enumerate(landmarks.landmark):
         landmark_x = min(int(landmark.x * image_width), image_width - 1)
         landmark_y = min(int(landmark.y * image_height), image_height - 1)
-        # landmark_z = landmark.z
 
         landmark_point.append([landmark_x, landmark_y])
 
     return landmark_point
-
 
 def pre_process_landmark(landmark_list):
     temp_landmark_list = copy.deepcopy(landmark_list)
@@ -261,49 +213,6 @@ def pre_process_landmark(landmark_list):
     temp_landmark_list = list(map(normalize_, temp_landmark_list))
 
     return temp_landmark_list
-
-
-def pre_process_point_history(image, point_history):
-    image_width, image_height = image.shape[1], image.shape[0]
-
-    temp_point_history = copy.deepcopy(point_history)
-
-    # Convert to relative coordinates
-    base_x, base_y = 0, 0
-    for index, point in enumerate(temp_point_history):
-        if index == 0:
-            base_x, base_y = point[0], point[1]
-
-        temp_point_history[index][0] = (temp_point_history[index][0] -
-                                        base_x) / image_width
-        temp_point_history[index][1] = (temp_point_history[index][1] -
-                                        base_y) / image_height
-
-    # Convert to a one-dimensional list
-    temp_point_history = list(
-        itertools.chain.from_iterable(temp_point_history))
-
-    return temp_point_history
-
-
-
-def logging_csv(number, mode, landmark_list, point_history_list, preset_paths):
-    if mode == 0:
-        return
-
-    if mode == 1 and (0 <= number <= 9):
-        csv_path = preset_paths.get("keypoint_csv_path", "model/keypoint_classifier/keypoint.csv")
-        with open(csv_path, 'a', newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([number, *landmark_list])
-
-    elif mode == 2 and (0 <= number <= 9):
-        csv_path = preset_paths.get("point_history_csv_path", "model/point_history_classifier/point_history.csv")
-        with open(csv_path, 'a', newline="") as f:
-            writer = csv.writer(f)
-            writer.writerow([number, *point_history_list])
-
-
 
 def draw_landmarks(image, landmark_point):
     if len(landmark_point) > 0:
@@ -495,10 +404,8 @@ def draw_landmarks(image, landmark_point):
 
 def draw_bounding_rect(use_brect, image, brect):
     if use_brect:
-        # Outer rectangle
         cv.rectangle(image, (brect[0], brect[1]), (brect[2], brect[3]),
                      (0, 0, 0), 1)
-
     return image
 
 
@@ -509,36 +416,10 @@ def draw_info_text(image, brect, handedness, hand_sign_text,
 
     info_text = handedness.classification[0].label[0:]
     if hand_sign_text != "":
-        info_text = info_text + ':' + hand_sign_text
+        info_text = info_text + ':' + (hand_sign_text or "")
     cv.putText(image, info_text, (brect[0] + 5, brect[1] - 4),
                cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1, cv.LINE_AA)
 
-
-    return image
-
-def draw_point_history(image, point_history):
-    for index, point in enumerate(point_history):
-        if point[0] != 0 and point[1] != 0:
-            cv.circle(image, (point[0], point[1]), 1 + int(index / 2),
-                      (152, 251, 152), 2)
-
-    return image
-
-def draw_info(image, fps, mode, number):
-    cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
-               1.0, (0, 0, 0), 4, cv.LINE_AA)
-    cv.putText(image, "FPS:" + str(fps), (10, 30), cv.FONT_HERSHEY_SIMPLEX,
-               1.0, (255, 255, 255), 2, cv.LINE_AA)
-
-    mode_string = ['Logging Key Point', 'Logging Point History']
-    if 1 <= mode <= 2:
-        cv.putText(image, "MODE:" + mode_string[mode - 1], (10, 90),
-                   cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
-                   cv.LINE_AA)
-        if 0 <= number <= 9:
-            cv.putText(image, "NUM:" + str(number), (10, 110),
-                       cv.FONT_HERSHEY_SIMPLEX, 0.6, (255, 255, 255), 1,
-                       cv.LINE_AA)
     return image
 
 if __name__ == '__main__':
