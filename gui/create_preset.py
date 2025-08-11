@@ -92,16 +92,52 @@ class CreatePreset(ctk.CTkFrame):
     def add_mapping_row(self):
         row_frame = ctk.CTkFrame(self.mapping_container, fg_color="transparent")
         row_frame.pack(pady=5)  
-        
+
         gesture_var = ctk.StringVar(value=self.gesture_options[0] if self.gesture_options else "")
-        key_var = ctk.StringVar()   
-        
+        key_var = ctk.StringVar(value="")
+
         gesture_menu = ctk.CTkOptionMenu(row_frame, variable=gesture_var, values=self.gesture_options, width=150)
         gesture_menu.pack(side="left", padx=5)
-        
+
         ctk.CTkLabel(row_frame, text="Key Mapped:", font=(font_family, 12)).pack(side="left", padx=5)
-        key_entry = ctk.CTkEntry(row_frame, textvariable=key_var, width=100)
+
+        key_entry = ctk.CTkEntry(row_frame, textvariable=key_var, width=100, state="disabled")
         key_entry.pack(side="left", padx=5) 
+
+        bind_btn = ctk.CTkButton(row_frame, text="Bind", width=50)
+        bind_btn.pack(side="left", padx=5)
+
+        state = {"capturing": False}
+
+        def start_capture():
+            key_var.set("...waiting for input...")
+            state["capturing"] = True
+            self.master.bind_all("<Key>", capture_key)
+            self.master.bind_all("<Button>", capture_mouse)
+
+        def stop_capture():
+            state["capturing"] = False
+            self.master.unbind_all("<Key>")
+            self.master.unbind_all("<Button>")
+
+        def capture_key(event):
+            if state["capturing"]:
+                key_var.set(event.keysym)
+                stop_capture()
+
+        def capture_mouse(event):
+            if state["capturing"]:
+                if event.num == 1:
+                    key_var.set("left_click")
+                elif event.num == 3:
+                    key_var.set("right_click")
+                else:
+                    key_var.set(f"mouse_button_{event.num}")
+                stop_capture()
+
+        bind_btn.configure(command=start_capture)
+
+        #Append immediately so both keyboard & mouse bindings are saved
         self.mapping_rows.append((gesture_var, key_var))
 
     def update_mapping_display(self):

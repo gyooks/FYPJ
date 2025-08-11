@@ -31,9 +31,14 @@ class EditPreset(ctk.CTkFrame):
         for gesture, key in self.gesture_mapping.items():
             self.add_mapping_row(initial_gesture=gesture, initial_key=key)
 
-        # Button to add a new row
-        ctk.CTkButton(self, text="+ Add Row", command=self.add_mapping_row).pack(pady=(10, 10))
 
+        # Button to add & delete row
+        row_frame = ctk.CTkFrame(self, fg_color="transparent")
+        row_frame.pack(pady=(10, 10))
+
+        ctk.CTkButton(row_frame, text="+ Add Row", command=self.add_mapping_row).pack(side="left", padx=5)
+        ctk.CTkButton(row_frame, text="− Delete Row", command=self.delete_last_row).pack(side="left", padx=5)
+    
         # Confirm/Cancel Buttons
         button_frame = ctk.CTkFrame(self, fg_color="transparent")
         button_frame.pack(pady=(20, 10))
@@ -45,39 +50,94 @@ class EditPreset(ctk.CTkFrame):
             return []
 
         gestures = []
-        with open(self.label_csv_path, newline='', encoding='utf-8') as csvfile:
+        with open(self.label_csv_path, newline='', encoding='utf-8-sig') as csvfile:
             reader = csv.reader(csvfile)
             for row in reader:
                 if row:
-                    gestures.append(row[0].strip())
+                    gestures.append(row[0].strip().lstrip("\ufeff"))  # strip BOM if present
         return sorted(list(set(gestures)))
+
 
     def load_existing_mapping(self):
         if not os.path.exists(self.mapping_json_path):
             return {}
         with open(self.mapping_json_path, 'r', encoding='utf-8-sig') as f:
-            return json.load(f)
+            data = json.load(f)
+            return {k.lstrip("\ufeff"): v for k, v in data.items()}
+
 
     def add_mapping_row(self, initial_gesture="", initial_key=""):
         row_frame = ctk.CTkFrame(self.mapping_container, fg_color="transparent")
         row_frame.pack(pady=5)
 
-        gesture_var = ctk.StringVar(value=initial_gesture if initial_gesture else self.gesture_options[0] if self.gesture_options else "")
+        gesture_var = ctk.StringVar(
+            value=initial_gesture if initial_gesture else self.gesture_options[0] if self.gesture_options else ""
+        )
         key_var = ctk.StringVar(value=initial_key)
 
+        # Gesture selection
         gesture_menu = ctk.CTkOptionMenu(row_frame, variable=gesture_var, values=self.gesture_options, width=150)
         gesture_menu.pack(side="left", padx=5)
 
+        # Label
         ctk.CTkLabel(row_frame, text="Key:", font=(font_family, 12)).pack(side="left", padx=5)
-        key_entry = ctk.CTkEntry(row_frame, textvariable=key_var, width=100)
+
+        # Disabled entry for showing current binding
+        key_entry = ctk.CTkEntry(row_frame, textvariable=key_var, width=100, state="disabled")
         key_entry.pack(side="left", padx=5)
 
-        self.mapping_rows.append((gesture_var, key_var))
+        # Bind button
+        bind_btn = ctk.CTkButton(row_frame, text="Bind", width=50)
+        bind_btn.pack(side="left", padx=5)
 
+
+        state = {"capturing": False}
+
+        def start_capture():
+            key_var.set("...waiting for input...")
+            state["capturing"] = True
+            self.master.bind_all("<Key>", capture_key)
+            self.master.bind_all("<Button>", capture_mouse)
+
+        def stop_capture():
+            state["capturing"] = False
+            self.master.unbind_all("<Key>")
+            self.master.unbind_all("<Button>")
+
+        def capture_key(event):
+            if state["capturing"]:
+                key_var.set(event.keysym)
+                stop_capture()
+
+        def capture_mouse(event):
+            if state["capturing"]:
+                if event.num == 1:
+                    key_var.set("left_click")
+                elif event.num == 3:
+                    key_var.set("right_click")
+                else:
+                    key_var.set(f"mouse_button_{event.num}")
+                stop_capture()
+
+        bind_btn.configure(command=start_capture)
+
+        # Keep reference so save_changes() will work
+        self.mapping_rows.append((gesture_var, key_var, row_frame))
+
+    def delete_last_row(self):
+        if self.mapping_rows:
+            gesture_var, key_var, row_frame = self.mapping_rows.pop()
+            try:
+                row_frame.destroy()
+            except Exception:
+                pass
+        else:
+            messagebox.showwarning("Warning", "No rows to delete.")
+            
     def save_changes(self):
         updated_mapping = {}
 
-        for gesture_var, key_var in self.mapping_rows:
+        for gesture_var, key_var, _ in self.mapping_rows:  
             gesture = gesture_var.get().strip()
             key = key_var.get().strip()
             if gesture and key:
@@ -100,3 +160,4 @@ class EditPreset(ctk.CTkFrame):
 
     def cancel_and_close(self):
         self.back_callback()
+
