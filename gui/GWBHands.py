@@ -13,6 +13,8 @@ from how_to_use import HowtousePage
 from gestures import Gestures  
 from create_gestures import CreateGestures
 from create_preset import CreatePreset
+from gui.start import main as start_main
+
 
 
 # Get the directory where this script is running
@@ -207,25 +209,13 @@ def start_gesture_app():
     if not selected_preset:
         msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
         return
-
-    python_executable = sys.executable
-    start_script_path = os.path.join(os.getcwd(), "gui", "start.py")
-
-    print("Launching:", start_script_path)
-    print("Exists?", os.path.exists(start_script_path))
-
-    if not os.path.exists(start_script_path):
-        msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
-        return
     root.withdraw()
     root.after(1000, check_unhide_flag)
-    subprocess.Popen([
-        python_executable,
-        start_script_path,
-        "--mapping", selected_preset_paths["mapping_path"],
-        "--keypoints", selected_preset_paths["keypoint_csv_path"],
-        "--labels", selected_preset_paths["label_csv_path"]
-    ])
+    start_main(
+        mapping=selected_preset_paths["mapping_path"],
+        keypoints=selected_preset_paths["keypoint_csv_path"],
+        labels=selected_preset_paths["label_csv_path"]
+    )
 
 def check_unhide_flag():
     flag_path = os.path.join(os.getcwd(), "gui", "unhide_gui.flag")

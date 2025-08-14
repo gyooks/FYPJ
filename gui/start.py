@@ -10,7 +10,7 @@ import keyboard
 import json
 import pyautogui
 
-from model import KeyPointClassifier
+from model.keypoint_classifier.keypoint_classifier import KeyPointClassifier
 
 def get_args():
     parser = argparse.ArgumentParser()
@@ -27,8 +27,23 @@ def get_args():
 
     return parser.parse_args()
 
-def main():
-    args = get_args()
+def main(mapping=None, keypoints=None, labels=None):
+    if mapping and keypoints and labels:
+        class Args:
+            pass
+        args = Args()
+        args.device = 0
+        args.width = 960
+        args.height = 540
+        args.use_static_image_mode = False
+        args.min_detection_confidence = 0.7
+        args.min_tracking_confidence = 0.5
+        args.mapping = mapping
+        args.keypoints = keypoints
+        args.labels = labels
+    else:
+        args = get_args()
+        
     cap_device = args.device
     cap_width = args.width
     cap_height = args.height
