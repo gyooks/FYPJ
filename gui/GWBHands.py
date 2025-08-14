@@ -1,25 +1,31 @@
 import customtkinter as ctk
 import sys
-import subprocess
 import tkinter.messagebox as msgbox
 import os
 import nbformat
+import threading
+import start
 
-
-from nbconvert.preprocessors import ExecutePreprocessor
+from nbconvert.preprocessors.execute import ExecutePreprocessor
 from settings import SettingsPage  
 from change_preset import ChangePreset  
 from how_to_use import HowtousePage  
 from gestures import Gestures  
 from create_gestures import CreateGestures
 from create_preset import CreatePreset
-from gui.start import main as start_main
+from start import main as start_main
 
 
 
 # Get the directory where this script is running
-script_dir = os.path.dirname(os.path.abspath(__file__))
-notebook_path = os.path.join(script_dir, "keypoint_classification.ipynb")
+if getattr(sys, 'frozen', False):
+    # Running from exe
+    base_path = sys._MEIPASS
+else:
+    # Running from source
+    base_path = os.path.dirname(os.path.abspath(__file__))
+
+notebook_path = os.path.join(base_path, "keypoint_classification.ipynb")
 
 # Create root window
 root = ctk.CTk()
@@ -167,22 +173,22 @@ change_preset_frame = ChangePreset(
 )
 
 def toggle_cursor_default():
-    global cursor_process
+    global cursor_thread
 
-    if cursor_process is not None and cursor_process.poll() is None:
-        cursor_process.terminate()
-        cursor_process = None
+    if cursor_thread is not None and cursor_thread.is_alive():
+        # If thread is running, stop it
+        # (you may need a stop flag in start.py for graceful shutdown)
+        start.stop_cursor_mode = True  # you should implement this flag inside start.py
+        cursor_thread.join()
+        cursor_thread = None
         msgbox.showinfo("Cursor Mode", "Cursor mode stopped.")
         return
 
-    python_executable = sys.executable
-    start_script_path = os.path.join(os.getcwd(), "gui", "start.py")
-    
-
+    # Load default preset paths
     default_preset_paths = {
-        "mapping_path": "gui/presets/Default/mapping.json",
-        "keypoint_csv_path": "gui/presets/Default/keypoint.csv",
-        "label_csv_path": "gui/presets/Default/keypoint_classifier_label.csv"
+        "mapping_path": os.path.join("gui", "presets", "Default", "mapping.json"),
+        "keypoint_csv_path": os.path.join("gui", "presets", "Default", "keypoint.csv"),
+        "label_csv_path": os.path.join("gui", "presets", "Default", "keypoint_classifier_label.csv")
     }
 
     for key, path in default_preset_paths.items():
@@ -190,17 +196,18 @@ def toggle_cursor_default():
             msgbox.showerror("Missing File", f"{key} not found at:\n{path}")
             return
 
-    if not os.path.exists(start_script_path):
-        msgbox.showerror("File Not Found", f"start.py not found at:\n{start_script_path}")
-        return
+    # Run start.py main function in a separate thread
+    def run_cursor():
+        sys.argv = [
+            "start.py",
+            "--mapping", default_preset_paths["mapping_path"],
+            "--keypoints", default_preset_paths["keypoint_csv_path"],
+            "--labels", default_preset_paths["label_csv_path"]
+        ]
+        start_main()
 
-    cursor_process = subprocess.Popen([
-        python_executable,
-        start_script_path,
-        "--mapping", default_preset_paths["mapping_path"],
-        "--keypoints", default_preset_paths["keypoint_csv_path"],
-        "--labels", default_preset_paths["label_csv_path"]
-    ])
+    cursor_thread = threading.Thread(target=run_cursor, daemon=True)
+    cursor_thread.start()
 
     msgbox.showinfo("Cursor Mode", "Cursor mode started.")
 
@@ -210,22 +217,29 @@ def start_gesture_app():
         msgbox.showwarning("No Preset Selected", "Please select a preset before starting.")
         return
     root.withdraw()
-    root.after(1000, check_unhide_flag)
-    start_main(
-        mapping=selected_preset_paths["mapping_path"],
-        keypoints=selected_preset_paths["keypoint_csv_path"],
-        labels=selected_preset_paths["label_csv_path"]
-    )
+    def run_start_main():
+        try:
+            start_main(
+                mapping=selected_preset_paths["mapping_path"],
+                keypoints=selected_preset_paths["keypoint_csv_path"],
+                labels=selected_preset_paths["label_csv_path"]
+            )
+        except Exception as e:
+            print("Error in start_main:", e)
+        finally:
+            # Ensure the main menu comes back when done
+            root.after(0, root.deiconify)
+
+    threading.Thread(target=run_start_main, daemon=True).start()
 
 def check_unhide_flag():
-    flag_path = os.path.join(os.getcwd(), "gui", "unhide_gui.flag")
+    flag_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "gui", "unhide_gui.flag")
     if os.path.exists(flag_path):
         os.remove(flag_path)
         print("Unhiding main GUI")
         root.deiconify()
-        return
-
-    root.after(1000, check_unhide_flag)
+    else:
+        root.after(1000, check_unhide_flag)
 
 def retrain_model_from_notebook():
     # Ensure a preset is selected

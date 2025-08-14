@@ -6,6 +6,9 @@ from PyInstaller.utils.hooks import collect_submodules
 # Collect all mediapipe and cv2 submodules to prevent ModuleNotFoundError
 extra_mediapipe = collect_submodules('mediapipe')
 extra_cv2 = collect_submodules('cv2')
+extra_nbconvert = collect_submodules('nbconvert')
+extra_nbformat = collect_submodules('nbformat')
+
 mp_path = os.path.dirname(mp.__file__)
 block_cipher = None
 
@@ -16,7 +19,8 @@ a = Analysis(
     datas=[
         ('gui', 'gui'),
         ('gui/model', 'model'),
-        (os.path.join(mp_path, 'modules'), 'mediapipe/modules')
+        (os.path.join(mp_path, 'modules'), 'mediapipe/modules'),
+        ('gui/keypoint_classification.ipynb', '.')
     ],
     hiddenimports=[
         'keyboard',
@@ -24,7 +28,8 @@ a = Analysis(
         'mediapipe',
         'nbformat',
         'nbconvert',
-    ] + extra_mediapipe + extra_cv2,
+        'nbconvert.preprocessors.execute',
+    ] + extra_mediapipe + extra_cv2 + extra_nbconvert + extra_nbformat,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

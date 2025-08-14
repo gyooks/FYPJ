@@ -91,7 +91,7 @@ def main(mapping=None, keypoints=None, labels=None):
         if key == ord('b'):
             print("Closing webcam and signaling GUI to unhide.")
             
-            flag_path = os.path.join(os.path.dirname(__file__), "unhide_gui.flag")
+            flag_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "unhide_gui.flag")
             with open(flag_path, "w") as f:
                 f.write("unhide")
 
