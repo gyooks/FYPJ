@@ -2,34 +2,35 @@
 import mediapipe as mp
 import os
 from PyInstaller.utils.hooks import collect_submodules
+from PyInstaller.building.build_main import Analysis, PYZ, EXE
 
 # Collect all mediapipe and cv2 submodules to prevent ModuleNotFoundError
 extra_mediapipe = collect_submodules('mediapipe')
 extra_cv2 = collect_submodules('cv2')
-extra_nbconvert = collect_submodules('nbconvert')
-extra_nbformat = collect_submodules('nbformat')
 
 mp_path = os.path.dirname(mp.__file__)
 block_cipher = None
 
+# Ensure your current working directory is included
+pathex = [os.path.abspath('.')]
+
+# Analysis
 a = Analysis(
     ['gui\\GWBHands.py'],
-    pathex=[],
+    pathex=pathex,
     binaries=[],
     datas=[
-        ('gui', 'gui'),
-        ('gui/model', 'model'),
-        (os.path.join(mp_path, 'modules'), 'mediapipe/modules'),
-        ('gui/keypoint_classification.ipynb', '.')
+        ('gui', 'gui'),  # GUI folder
+        ('gui/model', 'model'),  # Model folder
+        ('gui/assets', 'assets'),  # Asset folder with images
+        (os.path.join(mp_path, 'modules'), 'mediapipe/modules'),  # MediaPipe modules
+        ('gui/keypoint_classification.py', '.'),  # Keypoint classifier script
     ],
     hiddenimports=[
         'keyboard',
         'pyautogui',
         'mediapipe',
-        'nbformat',
-        'nbconvert',
-        'nbconvert.preprocessors.execute',
-    ] + extra_mediapipe + extra_cv2 + extra_nbconvert + extra_nbformat,
+    ] + extra_mediapipe + extra_cv2,
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],
@@ -40,8 +41,10 @@ a = Analysis(
     noarchive=False
 )
 
+# Python archive
 pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 
+# Executable
 exe = EXE(
     pyz,
     a.scripts,

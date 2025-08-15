@@ -5,7 +5,10 @@ import os
 import nbformat
 import threading
 import start
+import subprocess
+import csv
 
+from model import KeyPointClassifier
 from nbconvert.preprocessors.execute import ExecutePreprocessor
 from settings import SettingsPage  
 from change_preset import ChangePreset  
@@ -247,14 +250,6 @@ def retrain_model_from_notebook():
         msgbox.showwarning("No Preset Selected", "Please select a preset before retraining.")
         return
 
-    # Define paths
-    script_dir = os.path.dirname(os.path.abspath(__file__))
-    notebook_path = os.path.join(script_dir, "keypoint_classification.ipynb")
-
-    if not os.path.exists(notebook_path):
-        msgbox.showerror("Notebook Not Found", f"Cannot find: {notebook_path}")
-        return
-
     # Get preset file paths
     try:
         label_file = selected_preset_paths["label_csv_path"]
@@ -268,23 +263,16 @@ def retrain_model_from_notebook():
     mainmenu.update()
 
     try:
-        with open(notebook_path) as f:
-            nb = nbformat.read(f, as_version=4)
-            nb.cells.insert(0, nbformat.v4.new_code_cell(f"label_file = r'''{label_file}'''"))
-            nb.cells.insert(1, nbformat.v4.new_code_cell("print('label_file =', label_file)"))
-            nb.cells.insert(2, nbformat.v4.new_code_cell(f"dataset = r'''{dataset_file}'''"))
-            nb.cells.insert(3, nbformat.v4.new_code_cell("print('dataset =', dataset)"))
+        # Import and run training directly
+        from keypoint_classification import run_training
+        print("This is the label file:" + label_file)
+        print("This is the dataset file:" + dataset_file)
+        run_training(label_file, dataset_file)
 
-        ep = ExecutePreprocessor(timeout=600, kernel_name='python3')
-
-        os.environ["LABEL_CSV"] = label_file
-        os.environ["KEYPOINT_CSV"] = dataset_file
-
-        ep.preprocess(nb, {'metadata': {'path': script_dir}})
         msgbox.showinfo("Success", "Model trained successfully.")
 
     except Exception as e:
-        msgbox.showerror("Error", f"An error occurred:\n{str(e)}")
+        msgbox.showerror("Error", f"An unexpected error occurred:\n{str(e)}")
 
     finally:
         # Hide loading indicator
